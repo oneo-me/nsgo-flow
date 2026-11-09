@@ -23,6 +23,9 @@ diagramLabel: "Flow chart with {nodes, plural, one {# node} other {# nodes}} and
 openFailed: "Could not open the file: {error}"
 saveFailed: "Could not save the file: {error}"
 saved: Saved
+saveChanges: "Do you want to save the changes you made to {name}?"
+changesLost: Your changes will be lost if you don't save them.
+dontSave: Don't Save
 assistant: Assistant
 newChat: New Chat
 message: Message

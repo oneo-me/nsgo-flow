@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/oneo-me/nsgo/base"
 	"github.com/oneo-me/nsgo/core"
 	"github.com/oneo-me/nsgo/ui"
 	uiflow "github.com/oneo-me/nsgo/ui/flow"
@@ -199,10 +200,35 @@ func (e *editor) replace(d flowfile.Project, path string) {
 	}
 }
 
-func (e *editor) newFlow() { e.replace(flowfile.Project{}, "") }
+// keepChanges asks what becomes of the document's unsaved changes before
+// it goes, and runs then once they are saved or discarded; canceling, or
+// a save that fails or is canceled, keeps the document.
+func (e *editor) keepChanges(then func()) {
+	if !e.dirty.GetUntracked() {
+		then()
+		return
+	}
+	tr := locales.For(e.cx)
+	save, discard := tr.Save(), tr.DontSave()
+	base.ShowAlertDialog(e.cx, base.AlertDialog{
+		Title: tr.SaveChanges(core.Untracked(e.cx, e.name)), Description: tr.ChangesLost(),
+		Actions: []core.AlertAction{{Label: save}, {Label: discard, Role: core.AlertDestructive}, {Label: tr.Cancel(), Role: core.AlertCancel}},
+	}, func(label string) {
+		switch label {
+		case save:
+			e.saveThen(then)
+		case discard:
+			then()
+		}
+	})
+}
+
+func (e *editor) newFlow() { e.keepChanges(func() { e.replace(flowfile.Project{}, "") }) }
 
 // open asks for a flow file and shows it.
-func (e *editor) open() {
+func (e *editor) open() { e.keepChanges(e.pick) }
+
+func (e *editor) pick() {
 	e.cx.PickFiles(core.PickFilesOptions{Types: []string{".flow", ".txt"}}, func(files []core.File, err error) {
 		if err == nil && len(files) == 0 {
 			return
@@ -256,10 +282,13 @@ func (e *editor) openPath(path string) error {
 }
 
 // save writes the document to its file, or asks where.
-func (e *editor) save() {
+func (e *editor) save() { e.saveThen(nil) }
+
+// saveThen saves the document and runs done, when set, once it is saved.
+func (e *editor) saveThen(done func()) {
 	path := e.path.GetUntracked()
 	if path == "" {
-		e.saveAs()
+		e.saveAsThen(done)
 		return
 	}
 	tr := locales.For(e.cx)
@@ -269,11 +298,17 @@ func (e *editor) save() {
 	}
 	e.dirty.Set(false)
 	e.toasts.Show(ui.ToastContent{Type: ui.ToastSuccess, Title: tr.Saved()})
+	if done != nil {
+		done()
+	}
 }
 
 // saveAs asks where to save the document. The dialog copies a file, so
 // the document goes to a temporary one first.
-func (e *editor) saveAs() {
+func (e *editor) saveAs() { e.saveAsThen(nil) }
+
+// saveAsThen is saveAs, running done, when set, once the file is saved.
+func (e *editor) saveAsThen(done func()) {
 	tr := locales.For(e.cx)
 	fail := func(err error) {
 		e.toasts.Show(ui.ToastContent{Type: ui.ToastError, Title: tr.SaveFailed(err.Error())})
@@ -298,6 +333,9 @@ func (e *editor) saveAs() {
 		case saved:
 			e.dirty.Set(false)
 			e.toasts.Show(ui.ToastContent{Type: ui.ToastSuccess, Title: tr.Saved()})
+			if done != nil {
+				done()
+			}
 		}
 	})
 }

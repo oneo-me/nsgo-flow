@@ -44,7 +44,7 @@ go tool nsgo dev            # run
 go tool nsgo build          # build macOS, Windows and Linux into dist/
 ```
 
-命令行中给出的流程文件会在启动时打开。
+在 macOS 上，可以从访达用本应用打开 `.flow` 文件；在 Windows 和 Linux 上，命令行中给出的流程文件会在启动时打开。
 
 ## 快速开始
 

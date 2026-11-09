@@ -41,6 +41,7 @@ var Parameters = map[string][]string{
 	"DiagramLabel": {"nodes", "edges"},
 	"OpenFailed":   {"error_"},
 	"SaveFailed":   {"error_"},
+	"SaveChanges":  {"name"},
 	"Worked":       {"seconds"},
 	"Working":      {"seconds"},
 	"RanTools":     {"count"},
@@ -59,6 +60,7 @@ type Translation struct {
 	DiagramLabel func(nodes int, edges int) string
 	OpenFailed   func(error_ string) string
 	SaveFailed   func(error_ string) string
+	SaveChanges  func(name string) string
 	Worked       func(seconds int) string
 	Working      func(seconds int) string
 	RanTools     func(count int) string
@@ -92,6 +94,8 @@ const (
 	textTopToBottom
 	textDiagramEmpty
 	textSaved
+	textChangesLost
+	textDontSave
 	textAssistant
 	textNewChat
 	textMessage
@@ -179,6 +183,8 @@ var keyOfText = [numTexts]string{
 	"topToBottom",
 	"diagramEmpty",
 	"saved",
+	"changesLost",
+	"dontSave",
 	"assistant",
 	"newChat",
 	"message",
@@ -264,6 +270,8 @@ var textsEn = i18n.NewTexts(""+
 	"Top to Bottom"+
 	"Ask the assistant to design an app or draw a flow, or open a .flow file."+
 	"Saved"+
+	"Your changes will be lost if you don't save them."+
+	"Don't Save"+
 	"Assistant"+
 	"New Chat"+
 	"Message"+
@@ -346,6 +354,8 @@ var textsEn = i18n.NewTexts(""+
 		13,
 		72,
 		5,
+		49,
+		10,
 		9,
 		8,
 		7,
@@ -431,6 +441,8 @@ var textsZhHans = i18n.NewTexts(""+
 	"从上到下"+
 	"让助手设计一个应用或画一个流程，或打开 .flow 文件。"+
 	"已保存"+
+	"如果不保存，你的更改将会丢失。"+
+	"不保存"+
 	"助手"+
 	"新对话"+
 	"消息"+
@@ -512,6 +524,8 @@ var textsZhHans = i18n.NewTexts(""+
 		12,
 		12,
 		73,
+		9,
+		45,
 		9,
 		6,
 		9,
@@ -638,6 +652,9 @@ func Supply(lang string, t Translation) {
 	}
 	if t.SaveFailed != nil {
 		s.SaveFailed = t.SaveFailed
+	}
+	if t.SaveChanges != nil {
+		s.SaveChanges = t.SaveChanges
 	}
 	if t.Worked != nil {
 		s.Worked = t.Worked
@@ -902,6 +919,42 @@ func Saved(cx *core.Scope) string { return For(cx).Saved() }
 
 // Saved is the package's Saved in the language of msgs.
 func (msgs Messages) Saved() string { return msgs.text(textSaved) }
+
+// SaveChanges says "Do you want to save the changes you made to {name}?"
+// in the language the app shows under cx.
+func SaveChanges(cx *core.Scope, name string) string { return For(cx).SaveChanges(name) }
+
+// SaveChanges is the package's SaveChanges in the language of msgs.
+func (msgs Messages) SaveChanges(name string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.SaveChanges(name))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].SaveChanges; f != nil {
+			return f(name)
+		}
+		switch lang {
+		case "", "en":
+			return "Do you want to save the changes you made to " + msgs.arg(name) + "?"
+		case "zh-Hans":
+			return "要保存对“" + name + "”所做的更改吗？"
+		}
+	}
+}
+
+// ChangesLost says "Your changes will be lost if you don't save them."
+// in the language the app shows under cx.
+func ChangesLost(cx *core.Scope) string { return For(cx).ChangesLost() }
+
+// ChangesLost is the package's ChangesLost in the language of msgs.
+func (msgs Messages) ChangesLost() string { return msgs.text(textChangesLost) }
+
+// DontSave says "Don't Save"
+// in the language the app shows under cx.
+func DontSave(cx *core.Scope) string { return For(cx).DontSave() }
+
+// DontSave is the package's DontSave in the language of msgs.
+func (msgs Messages) DontSave() string { return msgs.text(textDontSave) }
 
 // Assistant says "Assistant"
 // in the language the app shows under cx.

@@ -44,7 +44,7 @@ go tool nsgo dev            # run
 go tool nsgo build          # build macOS, Windows and Linux into dist/
 ```
 
-A flow file given on the command line opens at start.
+On macOS, `.flow` files open with the app from the Finder; on Windows and Linux, a flow file given on the command line opens at start.
 
 ## Getting started
 

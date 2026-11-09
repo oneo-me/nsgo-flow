@@ -4,8 +4,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/oneo-me/nsgo"
 	"github.com/oneo-me/nsgo/base"
 	"github.com/oneo-me/nsgo/core"
@@ -15,13 +13,7 @@ import (
 	"github.com/oneo-me/nsgo-flow/locales"
 )
 
-// startPath is the flow file the command line names.
-var startPath string
-
 func main() {
-	if len(os.Args) > 1 {
-		startPath = os.Args[1]
-	}
 	nsgo.Run(Root, nsgo.WindowSize(1440, 900), nsgo.WindowConstraints(core.WindowConstraints{MinWidth: 1000, MinHeight: 480}))
 }
 
@@ -42,10 +34,22 @@ func Root(cx *core.Scope) core.Node {
 	// A conversation is about the document it began on.
 	e.opened = a.clear
 	reportUsage(cx, e, a)
-	if startPath != "" {
-		if err := e.openPath(startPath); err != nil {
-			toasts.Show(ui.ToastContent{Type: ui.ToastError, Title: tr.OpenFailed(err.Error())})
-		}
+	// Flow files opened from the Finder, or named on the command line.
+	desktop.OnOpenFiles(cx, func(paths []string) {
+		e.keepChanges(func() {
+			if err := e.openPath(paths[len(paths)-1]); err != nil {
+				toasts.Show(ui.ToastContent{Type: ui.ToastError, Title: tr.OpenFailed(err.Error())})
+			}
+		})
+	})
+	// Closing the window with unsaved changes asks first.
+	if w := desktop.CurrentWindow(cx); w != nil {
+		w.OnClosing(cx, func(c *desktop.WindowClosing) {
+			if e.dirty.GetUntracked() {
+				c.Cancel()
+				e.keepChanges(w.Close)
+			}
+		})
 	}
 
 	if desktop.IsAvailable(cx) {

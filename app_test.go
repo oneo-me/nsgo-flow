@@ -105,6 +105,79 @@ func TestOpensAFlowFile(t *testing.T) {
 	}
 }
 
+func TestUnsavedChangesAskBeforeTheyGo(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "plan.flow")
+	if err := os.WriteFile(path, []byte("title \"Plan\"\nnode a \"Research\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var e *editor
+	app := nsgotest.Start(t, Root, nsgotest.Size(1280, 800), nsgotest.PendingAlerts())
+	app.Post(func() { e = shown })
+	app.Settle()
+	app.Post(func() {
+		if err := e.openPath(path); err != nil {
+			t.Error(err)
+		}
+	})
+	app.Settle()
+	retitle := func(title string) {
+		app.Post(func() {
+			d := e.doc.GetUntracked()
+			d.Title = title
+			e.change(d, "")
+		})
+		app.Settle()
+	}
+	newFlow := func() {
+		app.Post(e.newFlow)
+		app.Settle()
+		if alerts := app.Alerts(); len(alerts) != 1 || !strings.Contains(alerts[0].Title, "plan.flow") {
+			t.Fatalf("alerts %+v", alerts)
+		}
+	}
+
+	// Canceling keeps the document.
+	retitle("Edited plan")
+	newFlow()
+	app.Answer(2)
+	app.Settle()
+	if got := app.Find("id:doc-title").Text; got != "Edited plan" {
+		t.Fatalf("after canceling, the title is %q", got)
+	}
+
+	// Saving writes the file before the new document shows.
+	newFlow()
+	app.Answer(0)
+	app.Settle()
+	if data, _ := os.ReadFile(path); !strings.Contains(string(data), "Edited plan") {
+		t.Fatalf("the file was not saved:\n%s", data)
+	}
+	app.WaitForGone("text:Edited plan", time.Second)
+
+	// Not saving drops the changes.
+	app.Post(func() {
+		if err := e.openPath(path); err != nil {
+			t.Error(err)
+		}
+	})
+	app.Settle()
+	retitle("Dropped")
+	newFlow()
+	app.Answer(1)
+	app.Settle()
+	app.WaitForGone("text:Dropped", time.Second)
+	if data, _ := os.ReadFile(path); strings.Contains(string(data), "Dropped") {
+		t.Fatal("not saving saved")
+	}
+
+	// A clean document goes without asking.
+	app.Post(e.newFlow)
+	app.Settle()
+	if len(app.Alerts()) != 0 {
+		t.Fatalf("a clean document asked: %+v", app.Alerts())
+	}
+}
+
 func TestSettingsTurnOffTheStatistics(t *testing.T) {
 	app := nsgotest.Start(t, Root, nsgotest.Size(1280, 800))
 	app.Press("label:Open Settings")

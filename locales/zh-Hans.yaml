@@ -21,6 +21,9 @@ diagramLabel: "包含 {nodes, number} 个节点和 {edges, number} 条连线的�
 openFailed: "无法打开文件：{error}"
 saveFailed: "无法保存文件：{error}"
 saved: 已保存
+saveChanges: "要保存对“{name}”所做的更改吗？"
+changesLost: 如果不保存，你的更改将会丢失。
+dontSave: 不保存
 assistant: 助手
 newChat: 新对话
 message: 消息
