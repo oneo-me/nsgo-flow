@@ -1,0 +1,14 @@
+title "Order handling"
+
+node start "Order placed" kind=start
+node check "Check stock" kind=decision note="Reserve every item"
+node pay "Charge card" status=doing
+node wait "Back-order" kind=data
+node ship "Ship" status=todo
+node done "Delivered" kind=end
+
+start -> check
+check -> pay "in stock"
+check ..> wait "out of stock"
+wait -> check
+pay -> ship -> done

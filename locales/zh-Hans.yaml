@@ -1,0 +1,66 @@
+appName: 流程编辑器
+untitled: 未命名
+edited: 已编辑
+fileMenu: 文件
+editMenu: 编辑
+viewMenu: 显示
+newFlow: 新建流程
+open: 打开…
+save: 保存
+saveAs: 另存为…
+settings: 设置…
+undoChange: 撤销图表更改
+redoChange: 重做图表更改
+zoomIn: 放大
+zoomOut: 缩小
+fit: 适合窗口
+leftToRight: 从左到右
+topToBottom: 从上到下
+diagramEmpty: 让助手画一个流程，或打开 .flow 文件。
+diagramLabel: "包含 {nodes, number} 个节点和 {edges, number} 条连线的流程图。"
+openFailed: "无法打开文件：{error}"
+saveFailed: "无法保存文件：{error}"
+saved: 已保存
+assistant: 助手
+newChat: 新对话
+message: 消息
+placeholder: 描述你想绘制的流程…
+send: 发送
+stop: 停止
+jumpToLatest: 跳到最新消息
+emptyTitle: 一起来画流程图
+emptyDetail: 描述一个流程，助手会询问所需的细节，并在左侧画出来。
+noProvider: 配置一个 OpenAI 兼容的提供商后即可开始对话。
+openSettings: 打开设置
+worked: "用时 {seconds, number} 秒"
+working: "已用时 {seconds, number} 秒"
+ranTools: "使用了 {count, number} 个工具"
+thinking: 思考
+stopped: 已停止
+failed: 出错了。
+retry: 重试
+toolGetFlow: 读取图表
+toolAddNodes: 添加节点
+toolUpdateNode: 修改节点
+toolRemoveNodes: 删除节点
+toolAddEdges: 连线
+toolRemoveEdges: 删除连线
+toolSetLayout: 布局
+toolReplaceFlow: 重绘图表
+toolFocus: 定位节点
+settingsTitle: 设置
+providerSection: 提供商
+providerDescription: 任何兼容 OpenAI Chat Completions 的 API，例如 OpenAI、DeepSeek、OpenRouter、Ollama 或 LM Studio。
+baseURL: 接口地址
+baseURLHint: API 的根地址，即 /chat/completions 之前的部分
+apiKey: API 密钥
+apiKeyHint: 保存在本机。本地服务可留空。
+model: 模型
+modelHint: 模型 ID，需支持工具调用
+cancel: 取消
+done: 完成
+statusTodo: 待办
+statusDoing: 进行中
+statusDone: 已完成
+statusBlocked: 受阻
+statusSkipped: 已跳过

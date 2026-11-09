@@ -1,0 +1,68 @@
+appName:
+  message: Flow Editor
+  description: The app's name.
+untitled: Untitled
+edited: Edited
+fileMenu: File
+editMenu: Edit
+viewMenu: View
+newFlow: New Flow
+open: Open…
+save: Save
+saveAs: Save As…
+settings: Settings…
+undoChange: Undo Chart Change
+redoChange: Redo Chart Change
+zoomIn: Zoom In
+zoomOut: Zoom Out
+fit: Fit to Window
+leftToRight: Left to Right
+topToBottom: Top to Bottom
+diagramEmpty: Ask the assistant to draw a flow, or open a .flow file.
+diagramLabel: "Flow chart with {nodes, plural, one {# node} other {# nodes}} and {edges, plural, one {# edge} other {# edges}}."
+openFailed: "Could not open the file: {error}"
+saveFailed: "Could not save the file: {error}"
+saved: Saved
+assistant: Assistant
+newChat: New Chat
+message: Message
+placeholder: Describe the process you want to chart…
+send: Send
+stop: Stop
+jumpToLatest: Jump to the latest message
+emptyTitle: Let's draw a flow together
+emptyDetail: Describe a process, and the assistant asks what it needs and draws it on the left.
+noProvider: Set up an OpenAI-compatible provider to start chatting.
+openSettings: Open Settings
+worked: "Worked for {seconds, number}s"
+working: "Working for {seconds, number}s"
+ranTools: "{count, plural, one {Used # tool} other {Used # tools}}"
+thinking: Thinking
+stopped: Stopped
+failed: Something went wrong.
+retry: Retry
+toolGetFlow: Read the chart
+toolAddNodes: Add nodes
+toolUpdateNode: Update node
+toolRemoveNodes: Remove nodes
+toolAddEdges: Connect
+toolRemoveEdges: Disconnect
+toolSetLayout: Layout
+toolReplaceFlow: Redraw the chart
+toolFocus: Show node
+settingsTitle: Settings
+providerSection: Provider
+providerDescription: Any API compatible with OpenAI's chat completions, such as OpenAI, DeepSeek, OpenRouter, Ollama or LM Studio.
+baseURL: Base URL
+baseURLHint: "The API's root, ending before /chat/completions"
+apiKey: API key
+apiKeyHint: Stored on this device. Leave it empty for local servers.
+model: Model
+modelHint: The model's ID, which must support tool calls
+cancel: Cancel
+done: Done
+statusTodo: To do
+statusDoing: In progress
+statusDone: Done
+statusBlocked: Blocked
+statusSkipped: Skipped

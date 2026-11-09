@@ -1,0 +1,11 @@
+name: Flow Editor
+id: me.oneo.nsgo-flow
+version: 0.1.0
+
+dev:
+  target: native
+  hot_reload: true
+
+build:
+  output: dist
+  targets: [macos_arm64, windows_x64, linux_x64]
