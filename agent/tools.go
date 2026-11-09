@@ -211,8 +211,9 @@ func Apply(doc flowfile.Doc, name, arguments string) Result {
 	return fail("unknown tool %q", name)
 }
 
-// SystemPrompt tells the model its job and shows it the chart as it is.
-func SystemPrompt(doc flowfile.Doc, selected string) string {
+// SystemPrompt tells the model its job and shows it the chart as it is,
+// and the name of the project folder it may read, "" for none.
+func SystemPrompt(doc flowfile.Doc, selected, folder string) string {
 	var b strings.Builder
 	b.WriteString(`You are a flow chart designer working inside a flow editor. The user sees the chart on the left and talks with you on the right.
 
@@ -243,6 +244,11 @@ The current chart:
 	b.WriteString("```\n")
 	if selected != "" {
 		fmt.Fprintf(&b, "\nThe user has selected node %q.\n", selected)
+	}
+	if folder != "" {
+		fmt.Fprintf(&b, `
+The user attached the project folder %q. When the user asks about how this project works, study it before drawing: list folders, find and search files, and read the code, configuration and documents that matter, then chart what the code actually does, naming the files behind a step in its note when that helps. Paths are relative to the folder's root, and you can only read it. Read only what the question needs, and do not quote long passages back.
+`, folder)
 	}
 	return b.String()
 }

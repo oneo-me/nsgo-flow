@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/fstest"
 
 	"github.com/oneo-me/nsgo-flow/flowfile"
 )
@@ -100,7 +101,7 @@ func TestRunCallsToolsUntilTheModelAnswers(t *testing.T) {
 	var text, reasoning strings.Builder
 	added, err := Run(context.Background(), Provider{BaseURL: srv.URL + "/v1/", APIKey: "key", Model: "m"},
 		[]Message{{Role: "user", Content: "Draw A"}}, Tools(), Hooks{
-			Prompt: func() string { return SystemPrompt(doc, "") },
+			Prompt: func() string { return SystemPrompt(doc, "", "") },
 			Delta:  func(d Delta) { text.WriteString(d.Text); reasoning.WriteString(d.Reasoning) },
 			Reply:  func(Message) {},
 			Call: func(c ToolCall) string {
@@ -136,5 +137,39 @@ func TestCompleteReportsErrors(t *testing.T) {
 	_, err := Complete(context.Background(), Provider{BaseURL: srv.URL + "/v1", APIKey: "wrong", Model: "m"}, nil, nil, func(Delta) {})
 	if err == nil || !strings.Contains(err.Error(), "bad request (HTTP 401)") {
 		t.Fatalf("error: %v", err)
+	}
+}
+
+func TestReadFolder(t *testing.T) {
+	fsys := fstest.MapFS{
+		"go.mod":                  {Data: []byte("module demo\n")},
+		"cmd/server/main.go":      {Data: []byte("package main\n\nfunc main() {\n\tserve()\n}\n")},
+		"internal/order/order.go": {Data: []byte("package order\n\nfunc Place() {}\nfunc Ship() {}\n")},
+		"node_modules/x/index.js": {Data: []byte("func Place() {}\n")},
+		".git/HEAD":               {Data: []byte("ref: main\n")},
+		"assets/logo.png":         {Data: []byte("\x89PNG\x00\x00")},
+	}
+	steps := []struct {
+		tool, args, want string
+		failed           bool
+	}{
+		{ToolListDir, ``, ".git/\nassets/\ncmd/\ngo.mod  12 B\ninternal/\nnode_modules/\n", false},
+		{ToolReadFile, `{"path":"cmd/server/main.go","offset":3,"limit":2}`, "     3\tfunc main() {\n     4\t\tserve()\n… 1 more lines; read on with offset=5\n", false},
+		{ToolGlob, `{"pattern":"**/*.go"}`, "cmd/server/main.go\ninternal/order/order.go\n", false},
+		{ToolGlob, `{"pattern":"*.go","path":"internal/order"}`, "internal/order/order.go\n", false},
+		{ToolGrep, `{"pattern":"func (Place|main)","include":"*.go"}`, "cmd/server/main.go:3: func main() {\ninternal/order/order.go:3: func Place() {}\n", false},
+		{ToolGrep, `{"pattern":"PNG"}`, "no matches", false},
+		{ToolReadFile, `{"path":"../secret"}`, `error: "../secret" is outside the project`, true},
+		{ToolReadFile, `{"path":"assets/logo.png"}`, "error: assets/logo.png is not a text file", true},
+		{ToolReadFile, `{"path":"cmd"}`, "error: cmd is a folder; use list_dir", true},
+	}
+	for _, s := range steps {
+		out, failed := ReadFolder(fsys, s.tool, s.args)
+		if out != s.want || failed != s.failed {
+			t.Errorf("%s %s:\n%q, failed %v", s.tool, s.args, out, failed)
+		}
+	}
+	if !strings.Contains(SystemPrompt(flowfile.Doc{}, "", "demo"), `project folder "demo"`) {
+		t.Fatal("the prompt does not mention the folder")
 	}
 }

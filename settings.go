@@ -14,6 +14,7 @@ const (
 	keyBaseURL = "provider.baseURL"
 	keyAPIKey  = "provider.apiKey"
 	keyModel   = "provider.model"
+	keyFolder  = "assistant.folder"
 )
 
 const defaultBaseURL = "https://api.openai.com/v1"
@@ -29,6 +30,20 @@ func provider(cx *core.Scope) agent.Provider {
 	key, _ := st.GetItem(keyAPIKey)
 	model, _ := st.GetItem(keyModel)
 	return agent.Provider{BaseURL: url, APIKey: key, Model: model}
+}
+
+// folder is the project folder the assistant may read, "" for none.
+func folder(cx *core.Scope) string {
+	dir, _ := cx.Storage().GetItem(keyFolder)
+	return dir
+}
+
+func setFolder(cx *core.Scope, dir string) {
+	if dir == "" {
+		cx.Storage().RemoveItem(keyFolder)
+		return
+	}
+	cx.Storage().SetItem(keyFolder, dir)
 }
 
 // statsSwitch turns the usage statistics on or off.

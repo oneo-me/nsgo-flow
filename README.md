@@ -28,6 +28,7 @@
 
 - Chart on the left, conversation on the right, in one window.
 - The assistant asks what it needs, then adds, links and rearranges nodes with tools.
+- Attach a project folder, and the assistant reads its code to chart how it works.
 - Each assistant change undoes as one step.
 - Works with any OpenAI-compatible provider that supports tool calls, local servers included.
 - Charts are plain-text `.flow` files you can read, diff and edit by hand.
@@ -48,8 +49,9 @@ A flow file given on the command line opens at start.
 
 1. Open **Settings** (⌘,) and enter a provider's base URL, such as `https://api.openai.com/v1`, an API key and a model that supports tool calls.
 2. Describe a process in the assistant, such as "Chart how we handle an order".
-3. Answer its questions and watch it draw the chart on the left.
-4. Save the chart as a `.flow` file, or open `examples/order.flow` to start from an example.
+3. To chart an existing project, press **Attach project folder** above the message box and pick its folder.
+4. Answer its questions and watch it draw the chart on the left.
+5. Save the chart as a `.flow` file, or open `examples/order.flow` to start from an example.
 
 The [`flowfile` package comment](flowfile/) describes the file format.
 

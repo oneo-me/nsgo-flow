@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -129,6 +131,13 @@ func (a *assistant) run(p agent.Provider, prompt string) {
 	a.running.Set(true)
 	a.conversation.JumpToLatest()
 	history := append(slices.Clone(a.history), agent.Message{Role: "user", Content: prompt})
+	// The folder a turn reads is the one attached when it began.
+	dir, name := core.Untracked(cx, func() string { return folder(cx) }), ""
+	tools := agent.Tools()
+	if dir != "" {
+		name = filepath.Base(dir)
+		tools = append(tools, agent.FolderTools()...)
+	}
 
 	// onUI runs fn on the UI's goroutine and waits for it.
 	onUI := func(fn func() string) string {
@@ -161,9 +170,9 @@ func (a *assistant) run(p agent.Provider, prompt string) {
 		}
 	}()
 	go func() {
-		added, err := agent.Run(ctx, p, history, agent.Tools(), agent.Hooks{
+		added, err := agent.Run(ctx, p, history, tools, agent.Hooks{
 			Prompt: func() string {
-				return onUI(func() string { return agent.SystemPrompt(a.e.doc.GetUntracked(), a.e.selected.GetUntracked()) })
+				return onUI(func() string { return agent.SystemPrompt(a.e.doc.GetUntracked(), a.e.selected.GetUntracked(), name) })
 			},
 			Delta: func(d agent.Delta) {
 				live(func() {
@@ -187,6 +196,11 @@ func (a *assistant) run(p agent.Provider, prompt string) {
 				})
 			},
 			Call: func(c agent.ToolCall) string {
+				if agent.IsFolderTool(c.Function.Name) {
+					// Files are read here, off the UI's goroutine.
+					out, failed := readFolder(dir, c)
+					return onUI(func() string { a.done(t, c.ID, out, failed); return out })
+				}
 				return onUI(func() string { return a.call(t, c) })
 			},
 		})
@@ -205,14 +219,20 @@ func (a *assistant) call(t *turn, c agent.ToolCall) string {
 		id := r.Focus
 		a.cx.Post(func() { a.e.camera.Reveal(id) })
 	}
+	a.done(t, c.ID, r.Output, r.Failed)
+	return r.Output
+}
+
+// done marks a call done in the transcript.
+func (a *assistant) done(t *turn, id, output string, failed bool) {
 	t.rounds.Update(func(rs []round) []round {
 		rs = slices.Clone(rs)
 		for i := range rs {
 			rs[i].calls = slices.Clone(rs[i].calls)
 			for j := range rs[i].calls {
-				if cl := &rs[i].calls[j]; cl.id == c.ID {
-					cl.output, cl.status = r.Output, chat.Completed
-					if r.Failed {
+				if cl := &rs[i].calls[j]; cl.id == id {
+					cl.output, cl.status = output, chat.Completed
+					if failed {
 						cl.status = chat.Failed
 					}
 				}
@@ -220,7 +240,30 @@ func (a *assistant) call(t *turn, c agent.ToolCall) string {
 		}
 		return rs
 	})
-	return r.Output
+}
+
+// readFolder runs a folder tool inside dir, which it cannot leave, not
+// even through a symbolic link.
+func readFolder(dir string, c agent.ToolCall) (string, bool) {
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return "error: " + err.Error(), true
+	}
+	defer root.Close()
+	return agent.ReadFolder(root.FS(), c.Function.Name, c.Function.Arguments)
+}
+
+// pickFolder asks for the project folder the assistant may read.
+func (a *assistant) pickFolder() {
+	a.cx.PickDirectories(core.PickDirectoriesOptions{}, func(dirs []core.Directory, err error) {
+		if err != nil {
+			a.e.toasts.Show(ui.ToastContent{Type: ui.ToastError, Title: locales.For(a.cx).FolderFailed(err.Error())})
+			return
+		}
+		if len(dirs) > 0 && dirs[0].Path != "" {
+			setFolder(a.cx, dirs[0].Path)
+		}
+	})
 }
 
 // finish ends a turn, keeping what it added to the history unless it
@@ -310,6 +353,14 @@ func toolLook(tr locales.Messages, name string) (func() *core.SVG, string) {
 		return lucide.Workflow, tr.ToolReplaceFlow()
 	case agent.ToolFocus:
 		return lucide.Crosshair, tr.ToolFocus()
+	case agent.ToolListDir:
+		return lucide.FolderOpen, tr.ToolListDir()
+	case agent.ToolReadFile:
+		return lucide.FileCode, tr.ToolReadFile()
+	case agent.ToolGlob:
+		return lucide.FileSearch, tr.ToolGlob()
+	case agent.ToolGrep:
+		return lucide.TextSearch, tr.ToolGrep()
 	}
 	return lucide.Wrench, name
 }
@@ -318,6 +369,7 @@ func toolLook(tr locales.Messages, name string) (func() *core.SVG, string) {
 func callDetail(name, arguments string) string {
 	var a struct {
 		ID, Title, Direction, Text string
+		Path, Pattern              string
 		Nodes                      []struct{ ID, Label string }
 		IDs                        []string
 		Edges                      []struct{ From, To string }
@@ -341,6 +393,10 @@ func callDetail(name, arguments string) string {
 		parts = slices.DeleteFunc([]string{a.Title, a.Direction}, func(s string) bool { return s == "" })
 	case agent.ToolReplaceFlow:
 		return fmt.Sprintf("%d lines", strings.Count(strings.TrimSpace(a.Text), "\n")+1)
+	case agent.ToolListDir, agent.ToolReadFile:
+		return cmp(a.Path, ".")
+	case agent.ToolGlob, agent.ToolGrep:
+		parts = slices.DeleteFunc([]string{a.Pattern, a.Path}, func(s string) bool { return s == "" })
 	default:
 		return a.ID
 	}
@@ -463,6 +519,26 @@ func errorRow(cx *core.Scope, message func() string, retry func()) core.Node {
 	}}
 }
 
+// folderRow is the project folder the assistant reads, which pressing
+// changes, or a button that attaches one.
+func folderRow(cx *core.Scope, a *assistant) core.Node {
+	tr := locales.For(cx)
+	return core.Dynamic(func(cx *core.Scope) core.Node {
+		dir := folder(cx)
+		if dir == "" {
+			return core.View{Style: core.Style{Direction: core.Row}, Children: []core.Node{
+				ui.Button{Text: tr.AttachFolder(), Icon: lucide.FolderOpen, Variant: ui.ButtonGhost, Size: ui.SizeSmall,
+					OnPress: a.pickFolder, TestID: "attach-folder"},
+			}}
+		}
+		return core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 2}, Children: []core.Node{
+			ui.Button{Text: filepath.Base(dir), Label: tr.ChangeFolder(filepath.Base(dir)), Icon: lucide.FolderCode, Variant: ui.ButtonGhost,
+				Size: ui.SizeSmall, OnPress: a.pickFolder, TestID: "change-folder"},
+			ui.IconButton{Icon: lucide.X, Label: tr.DetachFolder(), Size: 24, OnPress: func() { setFolder(cx, "") }, TestID: "detach-folder"},
+		}}
+	})
+}
+
 // assistantPane is the conversation over the composer.
 func assistantPane(cx *core.Scope, a *assistant) core.Node {
 	tr := locales.For(cx)
@@ -498,7 +574,8 @@ func assistantPane(cx *core.Scope, a *assistant) core.Node {
 		Children: []core.Node{core.Each(a.turns.Get, func(t *turn) string { return t.id }, func(cx *core.Scope, t func() *turn, _ func() int) core.Node {
 			return a.turnView(cx, core.Untracked(cx, t))
 		})}}
-	composer := core.View{Style: core.Style{Padding: core.Edges{Left: 12, Right: 12, Bottom: 12}}, Children: []core.Node{
+	composer := core.View{Style: core.Style{Gap: 6, Padding: core.Edges{Left: 12, Right: 12, Bottom: 12}}, Children: []core.Node{
+		folderRow(cx, a),
 		chat.Composer{Draft: a.draft.Get, OnDraftChange: a.draft.Set, Label: tr.Message(), Placeholder: tr.Placeholder(),
 			SendLabel: tr.Send(), StopLabel: tr.Stop(), Running: a.running.Get, OnSend: a.send, OnStop: a.stop, State: a.conversation, TestID: "composer"},
 	}}

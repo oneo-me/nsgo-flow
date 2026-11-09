@@ -50,6 +50,14 @@ toolRemoveEdges: Disconnect
 toolSetLayout: Layout
 toolReplaceFlow: Redraw the chart
 toolFocus: Show node
+toolListDir: List folder
+toolReadFile: Read file
+toolGlob: Find files
+toolGrep: Search files
+attachFolder: Attach project folder
+changeFolder: "Change project folder {name}"
+detachFolder: Detach the project folder
+folderFailed: "Could not attach the folder: {error}"
 settingsTitle: Settings
 providerSection: Provider
 providerDescription: Any API compatible with OpenAI's chat completions, such as OpenAI, DeepSeek, OpenRouter, Ollama or LM Studio.

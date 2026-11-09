@@ -44,6 +44,8 @@ var Parameters = map[string][]string{
 	"Worked":       {"seconds"},
 	"Working":      {"seconds"},
 	"RanTools":     {"count"},
+	"ChangeFolder": {"name"},
+	"FolderFailed": {"error_"},
 }
 
 // Translation is a language's messages another package supplies:
@@ -58,6 +60,8 @@ type Translation struct {
 	Worked       func(seconds int) string
 	Working      func(seconds int) string
 	RanTools     func(count int) string
+	ChangeFolder func(name string) string
+	FolderFailed func(error_ string) string
 }
 
 var supplied = map[string]Translation{}
@@ -108,6 +112,12 @@ const (
 	textToolSetLayout
 	textToolReplaceFlow
 	textToolFocus
+	textToolListDir
+	textToolReadFile
+	textToolGlob
+	textToolGrep
+	textAttachFolder
+	textDetachFolder
 	textSettingsTitle
 	textProviderSection
 	textProviderDescription
@@ -177,6 +187,12 @@ var keyOfText = [numTexts]string{
 	"toolSetLayout",
 	"toolReplaceFlow",
 	"toolFocus",
+	"toolListDir",
+	"toolReadFile",
+	"toolGlob",
+	"toolGrep",
+	"attachFolder",
+	"detachFolder",
 	"settingsTitle",
 	"providerSection",
 	"providerDescription",
@@ -244,6 +260,12 @@ var textsEn = i18n.NewTexts(""+
 	"Layout"+
 	"Redraw the chart"+
 	"Show node"+
+	"List folder"+
+	"Read file"+
+	"Find files"+
+	"Search files"+
+	"Attach project folder"+
+	"Detach the project folder"+
 	"Settings"+
 	"Provider"+
 	"Any API compatible with OpenAI's chat completions, such as OpenAI, DeepSeek, OpenRouter, Ollama or LM Studio."+
@@ -308,6 +330,12 @@ var textsEn = i18n.NewTexts(""+
 		6,
 		16,
 		9,
+		11,
+		9,
+		10,
+		12,
+		21,
+		25,
 		8,
 		8,
 		109,
@@ -375,6 +403,12 @@ var textsZhHans = i18n.NewTexts(""+
 	"布局"+
 	"重绘图表"+
 	"定位节点"+
+	"列出文件夹"+
+	"读取文件"+
+	"查找文件"+
+	"搜索文件"+
+	"附加项目文件夹"+
+	"移除项目文件夹"+
 	"设置"+
 	"提供商"+
 	"任何兼容 OpenAI Chat Completions 的 API，例如 OpenAI、DeepSeek、OpenRouter、Ollama 或 LM Studio。"+
@@ -439,6 +473,12 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		12,
 		12,
+		15,
+		12,
+		12,
+		12,
+		21,
+		21,
 		6,
 		9,
 		110,
@@ -531,6 +571,12 @@ func Supply(lang string, t Translation) {
 	}
 	if t.RanTools != nil {
 		s.RanTools = t.RanTools
+	}
+	if t.ChangeFolder != nil {
+		s.ChangeFolder = t.ChangeFolder
+	}
+	if t.FolderFailed != nil {
+		s.FolderFailed = t.FolderFailed
 	}
 	supplied[lang] = s
 	Catalog.Add(lang)
@@ -1019,6 +1065,92 @@ func ToolFocus(cx *core.Scope) string { return For(cx).ToolFocus() }
 
 // ToolFocus is the package's ToolFocus in the language of msgs.
 func (msgs Messages) ToolFocus() string { return msgs.text(textToolFocus) }
+
+// ToolListDir says "List folder"
+// in the language the app shows under cx.
+func ToolListDir(cx *core.Scope) string { return For(cx).ToolListDir() }
+
+// ToolListDir is the package's ToolListDir in the language of msgs.
+func (msgs Messages) ToolListDir() string { return msgs.text(textToolListDir) }
+
+// ToolReadFile says "Read file"
+// in the language the app shows under cx.
+func ToolReadFile(cx *core.Scope) string { return For(cx).ToolReadFile() }
+
+// ToolReadFile is the package's ToolReadFile in the language of msgs.
+func (msgs Messages) ToolReadFile() string { return msgs.text(textToolReadFile) }
+
+// ToolGlob says "Find files"
+// in the language the app shows under cx.
+func ToolGlob(cx *core.Scope) string { return For(cx).ToolGlob() }
+
+// ToolGlob is the package's ToolGlob in the language of msgs.
+func (msgs Messages) ToolGlob() string { return msgs.text(textToolGlob) }
+
+// ToolGrep says "Search files"
+// in the language the app shows under cx.
+func ToolGrep(cx *core.Scope) string { return For(cx).ToolGrep() }
+
+// ToolGrep is the package's ToolGrep in the language of msgs.
+func (msgs Messages) ToolGrep() string { return msgs.text(textToolGrep) }
+
+// AttachFolder says "Attach project folder"
+// in the language the app shows under cx.
+func AttachFolder(cx *core.Scope) string { return For(cx).AttachFolder() }
+
+// AttachFolder is the package's AttachFolder in the language of msgs.
+func (msgs Messages) AttachFolder() string { return msgs.text(textAttachFolder) }
+
+// ChangeFolder says "Change project folder {name}"
+// in the language the app shows under cx.
+func ChangeFolder(cx *core.Scope, name string) string { return For(cx).ChangeFolder(name) }
+
+// ChangeFolder is the package's ChangeFolder in the language of msgs.
+func (msgs Messages) ChangeFolder(name string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.ChangeFolder(name))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].ChangeFolder; f != nil {
+			return f(name)
+		}
+		switch lang {
+		case "", "en":
+			return "Change project folder " + msgs.arg(name)
+		case "zh-Hans":
+			return "更换项目文件夹 " + name
+		}
+	}
+}
+
+// DetachFolder says "Detach the project folder"
+// in the language the app shows under cx.
+func DetachFolder(cx *core.Scope) string { return For(cx).DetachFolder() }
+
+// DetachFolder is the package's DetachFolder in the language of msgs.
+func (msgs Messages) DetachFolder() string { return msgs.text(textDetachFolder) }
+
+// FolderFailed says "Could not attach the folder: {error}"
+// in the language the app shows under cx.
+func FolderFailed(cx *core.Scope, error_ string) string { return For(cx).FolderFailed(error_) }
+
+// FolderFailed is the package's FolderFailed in the language of msgs.
+func (msgs Messages) FolderFailed(error_ string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.FolderFailed(error_))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].FolderFailed; f != nil {
+			return f(error_)
+		}
+		switch lang {
+		case "", "en":
+			return "Could not attach the folder: " + msgs.arg(error_)
+		case "zh-Hans":
+			return "无法附加文件夹：" + error_
+		}
+	}
+}
 
 // SettingsTitle says "Settings"
 // in the language the app shows under cx.

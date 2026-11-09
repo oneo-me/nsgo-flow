@@ -48,6 +48,14 @@ toolRemoveEdges: 删除连线
 toolSetLayout: 布局
 toolReplaceFlow: 重绘图表
 toolFocus: 定位节点
+toolListDir: 列出文件夹
+toolReadFile: 读取文件
+toolGlob: 查找文件
+toolGrep: 搜索文件
+attachFolder: 附加项目文件夹
+changeFolder: "更换项目文件夹 {name}"
+detachFolder: 移除项目文件夹
+folderFailed: "无法附加文件夹：{error}"
 settingsTitle: 设置
 providerSection: 提供商
 providerDescription: 任何兼容 OpenAI Chat Completions 的 API，例如 OpenAI、DeepSeek、OpenRouter、Ollama 或 LM Studio。
