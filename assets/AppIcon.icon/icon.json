@@ -1,0 +1,75 @@
+{
+  "features": [
+    "refractivity"
+  ],
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "srgb:1.00000,1.00000,1.00000,1.00000",
+          "srgb:0.92549,0.91373,0.89412,1.00000"
+        ],
+        "orientation": {
+          "start": {
+            "x": 0.5,
+            "y": 1
+          },
+          "stop": {
+            "x": 0.5,
+            "y": 0
+          }
+        }
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "srgb:0.20000,0.20784,0.23529,1.00000",
+          "srgb:0.10980,0.11373,0.13333,1.00000"
+        ],
+        "orientation": {
+          "start": {
+            "x": 0.5,
+            "y": 1
+          },
+          "stop": {
+            "x": 0.5,
+            "y": 0
+          }
+        }
+      }
+    }
+  ],
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "01-nodes.png",
+          "name": "01-nodes"
+        }
+      ],
+      "name": "01-nodes",
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.4
+      }
+    },
+    {
+      "layers": [
+        {
+          "image-name": "02-links.png",
+          "name": "02-links"
+        }
+      ],
+      "name": "02-links",
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.3
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}
