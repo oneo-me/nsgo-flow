@@ -14,6 +14,8 @@ import (
 
 	"github.com/oneo-me/nsgo/core"
 	"github.com/oneo-me/nsgo/nsgotest"
+
+	"github.com/oneo-me/nsgo-flow/flowfile"
 )
 
 // TestMain gives the platform the main thread under nsgo test -target.
@@ -52,7 +54,7 @@ func TestAssistantDrawsOnTheChart(t *testing.T) {
 	)
 	app := nsgotest.Start(t, Root, nsgotest.Size(1280, 800),
 		nsgotest.Storage(map[string]string{keyBaseURL: url, keyModel: "test-model"}))
-	app.Find("text:Ask the assistant to draw a flow, or open a .flow file.")
+	app.Find("text:Ask the assistant to design an app or draw a flow, or open a .flow file.")
 	app.Type("label:Message", "Chart an order flow")
 	app.Press("label:Send")
 	app.WaitFor("flow >> label:Ship order", 5*time.Second)
@@ -62,7 +64,7 @@ func TestAssistantDrawsOnTheChart(t *testing.T) {
 	// The change undoes as one step per tool call.
 	app.Press("id:undo")
 	app.WaitForGone("flow >> label:Order placed", time.Second)
-	app.Find("text:Ask the assistant to draw a flow, or open a .flow file.")
+	app.Find("text:Ask the assistant to design an app or draw a flow, or open a .flow file.")
 }
 
 func TestAssistantShowsFailuresAndAsksForAProvider(t *testing.T) {
@@ -97,7 +99,7 @@ func TestOpensAFlowFile(t *testing.T) {
 	})
 	app.Settle()
 	app.Find("flow >> label:Research")
-	app.Find("text:Read the docs")
+	app.Find("flow >> text:Read the docs")
 	if got := app.Find("id:doc-title").Text; got != "Plan" {
 		t.Fatalf("title %q", got)
 	}
@@ -162,5 +164,39 @@ func TestAssistantReadsTheAttachedFolder(t *testing.T) {
 	app.WaitFor("id:attach-folder", time.Second)
 	if _, ok := app.Storage().GetItem(keyFolder); ok {
 		t.Fatal("the folder is still stored")
+	}
+}
+
+func TestAssistantDesignsScreensWithFlows(t *testing.T) {
+	ui := `navbar \\\"Sign in\\\" back=true\\ninput \\\"Email\\\" placeholder=\\\"you@example.com\\\"\\nbutton \\\"Continue\\\" variant=primary`
+	url := model(t,
+		deltas(`{"tool_calls":[`+
+			`{"index":0,"id":"c1","function":{"name":"add_screen","arguments":"{\"id\":\"signin\",\"title\":\"Sign in\",\"ui\":\"`+ui+`\"}"}},`+
+			`{"index":1,"id":"c2","function":{"name":"add_flow","arguments":"{\"id\":\"login\",\"title\":\"Log in\"}"}},`+
+			`{"index":2,"id":"c3","function":{"name":"add_nodes","arguments":"{\"nodes\":[{\"id\":\"tap\",\"label\":\"Tap Continue\",\"kind\":\"start\"}]}"}},`+
+			`{"index":3,"id":"c4","function":{"name":"add_flow","arguments":"{\"id\":\"reset\",\"title\":\"Reset password\"}"}},`+
+			`{"index":4,"id":"c5","function":{"name":"add_nodes","arguments":"{\"nodes\":[{\"id\":\"mail\",\"label\":\"Send reset mail\"}]}"}}]}`),
+		deltas(`{"content":"I drew the sign-in screen."}`),
+	)
+	app := nsgotest.Start(t, Root, nsgotest.Size(1440, 900),
+		nsgotest.Storage(map[string]string{keyBaseURL: url, keyModel: "test-model"}))
+	app.Type("label:Message", "Design a sign-in screen")
+	app.Press("label:Send")
+	app.WaitFor("text:I drew the sign-in screen.", 5*time.Second)
+	app.Find("id:screen-signin")
+	// The last flow drawn is open; the tabs open the other and the design.
+	app.Find("flow >> label:Send reset mail")
+	app.Press("id:flow-tab-login")
+	app.WaitFor("flow >> label:Tap Continue", time.Second)
+	app.Press("id:tab-design")
+	app.WaitFor("design >> text:Continue", time.Second)
+	app.Find("design >> label:Email")
+}
+
+func TestEveryIconNameDraws(t *testing.T) {
+	for _, name := range flowfile.Icons {
+		if _, ok := icons[name]; !ok {
+			t.Errorf("no icon %q", name)
+		}
 	}
 }

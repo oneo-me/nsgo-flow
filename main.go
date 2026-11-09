@@ -22,13 +22,14 @@ func main() {
 	if len(os.Args) > 1 {
 		startPath = os.Args[1]
 	}
-	nsgo.Run(Root, nsgo.WindowSize(1280, 800), nsgo.WindowConstraints(core.WindowConstraints{MinWidth: 760, MinHeight: 480}))
+	nsgo.Run(Root, nsgo.WindowSize(1440, 900), nsgo.WindowConstraints(core.WindowConstraints{MinWidth: 1000, MinHeight: 480}))
 }
 
 // shown is the editor of the window shown last, which tests reach.
 var shown *editor
 
-// Root is the app's window: the diagram beside the assistant.
+// Root is the app's window: the screens beside the open one, beside the
+// assistant.
 func Root(cx *core.Scope) core.Node {
 	cx.SetTheme(ui.DefaultTheme())
 	tr := locales.For(cx)
@@ -63,9 +64,12 @@ func Root(cx *core.Scope) core.Node {
 
 	chatWidth := core.NewSignal(cx, core.Points(400))
 	return core.View{Style: ui.FillRest, StyleFunc: ui.Filled(colors.Background), Children: []core.Node{
-		ui.ResizablePanelGroup{Style: ui.FillRest, HandleLabel: tr.Assistant(), Panels: []base.ResizablePanel{
-			{MinSize: 320, Children: []core.Node{diagramPane(cx, e)}},
-			{Size: chatWidth.Get, OnResize: chatWidth.Set, MinSize: 320, MaxSize: 720, Children: []core.Node{assistantPane(cx, a)}},
+		core.View{Style: ui.FillRest.Merge(core.Style{Direction: core.Row}), Children: []core.Node{
+			sidebar(cx, e),
+			ui.ResizablePanelGroup{Style: ui.FillRest, HandleLabel: tr.Assistant(), Panels: []base.ResizablePanel{
+				{MinSize: 420, Children: []core.Node{workspacePane(cx, e)}},
+				{Size: chatWidth.Get, OnResize: chatWidth.Set, MinSize: 320, MaxSize: 720, Children: []core.Node{assistantPane(cx, a)}},
+			}},
 		}},
 		settingsDialog(cx, settingsOpen),
 		ui.Toasts{Toaster: toasts, Placement: ui.ToastBottomStart},
@@ -103,11 +107,11 @@ func menu(cx *core.Scope, e *editor, a *assistant, settingsOpen *core.Signal[boo
 			{Label: tr.RedoChange(), Shortcut: "mod+alt+shift+z", Disabled: !canRedo, OnSelect: e.redo},
 		}},
 		{Label: tr.ViewMenu(), Items: []desktop.MenuItem{
-			{Label: tr.ZoomIn(), Shortcut: "mod+=", OnSelect: e.camera.ZoomIn},
-			{Label: tr.ZoomOut(), Shortcut: "mod+-", OnSelect: e.camera.ZoomOut},
-			{Label: tr.Fit(), Shortcut: "mod+0", OnSelect: e.camera.Fit},
+			{Label: tr.ZoomIn(), Shortcut: "mod+=", OnSelect: func() { e.camera.ZoomIn() }},
+			{Label: tr.ZoomOut(), Shortcut: "mod+-", OnSelect: func() { e.camera.ZoomOut() }},
+			{Label: tr.Fit(), Shortcut: "mod+0", OnSelect: func() { e.camera.Fit() }},
 			{Separator: true},
-			{Label: tr.LeftToRight(), Checkable: true, Checked: e.doc.Get().Direction == "right", OnSelect: e.toggleDirection},
+			{Label: tr.LeftToRight(), Checkable: true, Checked: e.flowDoc(e.flow.Get()).Direction == "right", Disabled: e.flow.Get() == "", OnSelect: e.toggleDirection},
 		}},
 	}
 }

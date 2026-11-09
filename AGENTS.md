@@ -1,6 +1,6 @@
 # Flow Editor
 
-A desktop flow chart editor built on [NSGo](https://github.com/oneo-me/nsgo): a flow file's chart on the left, an AI assistant that draws on it on the right. Read [ARCHITECTURE.md](ARCHITECTURE.md) before coding.
+A desktop app and flow designer built on [NSGo](https://github.com/oneo-me/nsgo): a flow file's screens and their flow charts on the left, an AI assistant that draws them on the right. Read [ARCHITECTURE.md](ARCHITECTURE.md) before coding.
 
 ## Principles
 

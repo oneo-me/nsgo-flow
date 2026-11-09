@@ -1,0 +1,104 @@
+title "Coffee shop"
+
+screen signin "Sign in"
+  navbar "Sign in" back=true
+  heading "Welcome back"
+  text "Sign in to order ahead and collect points." tone=muted
+  input "Email" icon=mail placeholder="you@example.com"
+  input "Password" type=password icon=lock
+  row
+    checkbox "Remember me" checked=true
+    link "Forgot password?"
+  end
+  button "Sign in" variant=primary size=large icon=log-in
+  divider
+  row
+    button "Apple" variant=outline
+    button "Google" variant=outline
+  end
+  spacer
+  alert "New here?" note="Your first drink is on us." tone=accent icon=gift
+
+  flow login "Signing in"
+    node tap "Tap Sign in" kind=start
+    node check "Check password" kind=decision note="Lock after 5 tries"
+    node home "Show the menu" kind=end
+    node error "Show the error"
+    tap -> check
+    check -> home "valid"
+    check -> error "invalid"
+    error ..> tap "try again"
+
+  flow reset "Resetting the password"
+    direction right
+    node forgot "Tap Forgot password" kind=start
+    node mail "Send a reset link" kind=data
+    node done "Set a new password" kind=end
+    forgot -> mail -> done
+
+screen menu "Menu"
+  navbar "Menu" icon=shopping-cart
+  input type=search placeholder="Search drinks"
+  segmented "Coffee" "Tea" "Snacks" selected=1
+  card "Flat white"
+    text "Double ristretto with silky milk" tone=muted
+    row
+      badge "Popular" tone=success
+      rating value=4
+      text "$4.50"
+    end
+  end
+  section "Today"
+    item "Latte" icon=coffee note="Espresso and steamed milk" trailing="$4.20"
+    item "Cold brew" icon=zap note="Steeped for 18 hours" trailing="$4.00"
+    switch "Oat milk" icon=sparkles note="+$0.60" checked=true
+  end
+  spacer
+  tabbar "Home" "Search" "Orders" "Profile" selected=1
+
+  flow order "Ordering a drink"
+    node pick "Pick a drink" kind=start
+    node size "Choose the size" note="Small, medium or large"
+    node cart "Add to cart" kind=data
+    node pay "Pay" kind=decision
+    node ready "Collect at the counter" kind=end status=todo
+    pick -> size -> cart -> pay
+    pay -> ready "paid"
+    pay ..> cart "declined"
+
+screen admin "Dashboard" device=desktop
+  sidebar
+    heading "Bean & Co"
+    navitem "Overview" icon=layout-dashboard active=true
+    navitem "Orders" icon=package trailing="12"
+    navitem "Customers" icon=users
+    navitem "Menu" icon=coffee
+    spacer
+    navitem "Settings" icon=settings
+  end
+  navbar "Overview" action="Export" icon=download
+  breadcrumbs "Store" "Downtown" "Overview"
+  grid columns=3
+    stat "Revenue" value="$12,480" note="+8.2% this week" tone=success icon=wallet
+    stat "Orders" value="1,204" note="+3.1%" tone=success icon=package
+    stat "Wait time" value="4m 12s" note="+40s" tone=danger icon=clock
+  end
+  row
+    chart "Orders this week" values="120,180,150,210,260,240,310"
+    card "Goals"
+      progress "Daily sales" value=72
+      progress "Loyalty sign-ups" value=45
+      slider "Max queue" value=30
+    end
+  end
+  tabs "Recent:clock" "Pending:hourglass" "Refunds:refresh-cw" selected=1
+  pagination value=2 total=8
+
+  flow refund "Refunding an order"
+    node ask "Customer asks" kind=start
+    node check "Within 24 hours?" kind=decision
+    node refund "Refund to card" kind=end
+    node credit "Offer store credit" kind=end
+    ask -> check
+    check -> refund "yes"
+    check -> credit "no"

@@ -15,37 +15,79 @@ import (
 )
 
 func TestApply(t *testing.T) {
-	var d flowfile.Doc
+	var p flowfile.Project
+	var at Location
 	steps := []struct{ tool, args, want string }{
 		{ToolAddNodes, `{"nodes":[{"id":"a","label":"Start","kind":"start"},{"id":"b","label":"Work"}]}`, "added 2 nodes"},
 		{ToolAddEdges, `{"edges":[{"from":"a","to":"b","label":"go","dashed":true}]}`, "added 1 edges"},
 		{ToolUpdateNode, `{"id":"b","rename_to":"work","status":"doing"}`, "updated b"},
-		{ToolSetLayout, `{"title":"Plan","direction":"right"}`, "layout set"},
+		{ToolSetLayout, `{"title":"Plan","direction":"right","project_title":"App"}`, "layout set"},
+		{ToolAddScreen, `{"id":"signin","title":"Sign in","ui":"navbar \"Sign in\"\nrow\n  button \"Go\" variant=primary\nend"}`, "screen signin has 2 elements and 0 flows"},
+		{ToolAddFlow, `{"id":"login","title":"Log in"}`, "flow login is on screen signin"},
+		{ToolAddNodes, `{"nodes":[{"id":"tap","label":"Tap Go"}]}`, "added 1 nodes"},
+		{ToolSetUI, `{"screen":"main","ui":"heading \"Plan\""}`, "screen main has 1 elements"},
 	}
 	for _, s := range steps {
-		r := Apply(d, s.tool, s.args)
+		r := Apply(p, at, s.tool, s.args)
 		if r.Failed || r.Output != s.want {
 			t.Fatalf("%s: %q", s.tool, r.Output)
 		}
-		d = r.Doc
+		p = r.Project
+		if r.Show.Screen != "" {
+			at = r.Show
+		}
 	}
-	want := "title \"Plan\"\ndirection right\n\nnode a \"Start\" kind=start\nnode work \"Work\" status=doing\n\na ..> work \"go\"\n"
-	if got := d.Format(); got != want {
-		t.Fatalf("chart:\n%s", got)
+	want := `title "App"
+
+screen main
+  heading "Plan"
+
+  flow main "Plan"
+    direction right
+
+    node a "Start" kind=start
+    node work "Work" status=doing
+
+    a ..> work "go"
+
+screen signin "Sign in"
+  navbar "Sign in"
+  row
+    button "Go" variant=primary
+  end
+
+  flow login "Log in"
+    node tap "Tap Go"
+`
+	if got := p.Format(); got != want {
+		t.Fatalf("project:\n%s", got)
 	}
-	if r := Apply(d, ToolGetFlow, ""); r.Output != want || r.Changed {
-		t.Fatalf("get_flow: %+v", r)
+	if at != (Location{Screen: "main", Design: true}) {
+		t.Fatalf("open at %+v", at)
 	}
-	if r := Apply(d, ToolFocus, `{"id":"work"}`); r.Focus != "work" || r.Changed {
-		t.Fatalf("focus: %+v", r)
+	if r := Apply(p, at, ToolGetProject, ""); r.Output != want || r.Changed {
+		t.Fatalf("get_project: %+v", r)
 	}
-	r := Apply(d, ToolRemoveNodes, `{"ids":["a","nope"]}`)
-	if !r.Failed || len(r.Doc.Nodes) != 2 || len(d.Nodes) != 2 {
-		t.Fatalf("a failed call changed the chart: %+v", r)
+	if r := Apply(p, at, ToolShow, `{"flow":"login","node":"tap"}`); r.Show != (Location{Screen: "signin", Flow: "login", Node: "tap"}) || r.Changed {
+		t.Fatalf("show: %+v", r)
 	}
-	r = Apply(d, ToolReplaceFlow, `{"text":"x -> y\ny -> z"}`)
-	if r.Failed || len(r.Doc.Nodes) != 3 {
+	r := Apply(p, at, ToolRemoveNodes, `{"ids":["a","nope"]}`)
+	if !r.Failed || len(r.Project.Screens[0].Flows[0].Nodes) != 2 || len(p.Screens[0].Flows[0].Nodes) != 2 {
+		t.Fatalf("a failed call changed the project: %+v", r)
+	}
+	if r := Apply(p, at, ToolSetUI, `{"ui":"widget"}`); !r.Failed || !strings.Contains(r.Output, "unknown element") {
+		t.Fatalf("set_ui: %+v", r)
+	}
+	if r := Apply(p, Location{Screen: "signin"}, ToolAddFlow, `{"id":"login","screen":"main"}`); !r.Failed {
+		t.Fatalf("a second flow login: %+v", r)
+	}
+	r = Apply(p, at, ToolReplaceFlow, `{"flow":"login","text":"x -> y\ny -> z"}`)
+	if r.Failed || len(r.Project.Screens[1].Flows[0].Nodes) != 3 || r.Project.Screens[1].Flows[0].Title != "Log in" {
 		t.Fatalf("replace: %+v", r)
+	}
+	r = Apply(p, at, ToolRemoveScreen, `{"id":"main"}`)
+	if r.Failed || len(r.Project.Screens) != 1 {
+		t.Fatalf("remove_screen: %+v", r)
 	}
 	for _, tool := range Tools() {
 		if _, err := json.Marshal(tool); err != nil {
@@ -97,16 +139,16 @@ func TestRunCallsToolsUntilTheModelAnswers(t *testing.T) {
 	}}
 	srv := httptest.NewServer(model)
 	defer srv.Close()
-	var doc flowfile.Doc
+	var doc flowfile.Project
 	var text, reasoning strings.Builder
 	added, err := Run(context.Background(), Provider{BaseURL: srv.URL + "/v1/", APIKey: "key", Model: "m"},
 		[]Message{{Role: "user", Content: "Draw A"}}, Tools(), Hooks{
-			Prompt: func() string { return SystemPrompt(doc, "", "") },
+			Prompt: func() string { return SystemPrompt(doc, Location{}, "") },
 			Delta:  func(d Delta) { text.WriteString(d.Text); reasoning.WriteString(d.Reasoning) },
 			Reply:  func(Message) {},
 			Call: func(c ToolCall) string {
-				r := Apply(doc, c.Function.Name, c.Function.Arguments)
-				doc = r.Doc
+				r := Apply(doc, Location{}, c.Function.Name, c.Function.Arguments)
+				doc = r.Project
 				return r.Output
 			},
 		})
@@ -116,7 +158,7 @@ func TestRunCallsToolsUntilTheModelAnswers(t *testing.T) {
 	if len(added) != 3 || added[1].Role != "tool" || added[1].ToolCallID != "c1" || added[2].Content != "Done." {
 		t.Fatalf("messages: %+v", added)
 	}
-	if n, ok := doc.Node("a"); !ok || n.Label != "A" {
+	if n, ok := doc.Screens[0].Flows[0].Node("a"); !ok || n.Label != "A" {
 		t.Fatalf("the tool did not run: %+v", doc)
 	}
 	if text.String() != "DrawingDone." || reasoning.String() != "hmm" {
@@ -169,7 +211,7 @@ func TestReadFolder(t *testing.T) {
 			t.Errorf("%s %s:\n%q, failed %v", s.tool, s.args, out, failed)
 		}
 	}
-	if !strings.Contains(SystemPrompt(flowfile.Doc{}, "", "demo"), `project folder "demo"`) {
+	if !strings.Contains(SystemPrompt(flowfile.Project{}, Location{}, "demo"), `project folder "demo"`) {
 		t.Fatal("the prompt does not mention the folder")
 	}
 }

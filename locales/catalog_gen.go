@@ -46,6 +46,8 @@ var Parameters = map[string][]string{
 	"RanTools":     {"count"},
 	"ChangeFolder": {"name"},
 	"FolderFailed": {"error_"},
+	"ScreenCount":  {"count"},
+	"FlowCount":    {"count"},
 }
 
 // Translation is a language's messages another package supplies:
@@ -62,6 +64,8 @@ type Translation struct {
 	RanTools     func(count int) string
 	ChangeFolder func(name string) string
 	FolderFailed func(error_ string) string
+	ScreenCount  func(count int) string
+	FlowCount    func(count int) string
 }
 
 var supplied = map[string]Translation{}
@@ -103,7 +107,6 @@ const (
 	textStopped
 	textFailed
 	textRetry
-	textToolGetFlow
 	textToolAddNodes
 	textToolUpdateNode
 	textToolRemoveNodes
@@ -111,7 +114,6 @@ const (
 	textToolRemoveEdges
 	textToolSetLayout
 	textToolReplaceFlow
-	textToolFocus
 	textToolListDir
 	textToolReadFile
 	textToolGlob
@@ -137,6 +139,20 @@ const (
 	textStatsSection
 	textStatsSend
 	textStatsDetail
+	textToolGetProject
+	textToolAddScreen
+	textToolSetUI
+	textToolRemoveScreen
+	textToolAddFlow
+	textToolRemoveFlow
+	textToolReplaceProject
+	textToolShow
+	textScreens
+	textScreensEmpty
+	textFlows
+	textFlowEmpty
+	textDesign
+	textDesignEmpty
 	numTexts
 )
 
@@ -178,7 +194,6 @@ var keyOfText = [numTexts]string{
 	"stopped",
 	"failed",
 	"retry",
-	"toolGetFlow",
 	"toolAddNodes",
 	"toolUpdateNode",
 	"toolRemoveNodes",
@@ -186,7 +201,6 @@ var keyOfText = [numTexts]string{
 	"toolRemoveEdges",
 	"toolSetLayout",
 	"toolReplaceFlow",
-	"toolFocus",
 	"toolListDir",
 	"toolReadFile",
 	"toolGlob",
@@ -212,6 +226,20 @@ var keyOfText = [numTexts]string{
 	"statsSection",
 	"statsSend",
 	"statsDetail",
+	"toolGetProject",
+	"toolAddScreen",
+	"toolSetUI",
+	"toolRemoveScreen",
+	"toolAddFlow",
+	"toolRemoveFlow",
+	"toolReplaceProject",
+	"toolShow",
+	"screens",
+	"screensEmpty",
+	"flows",
+	"flowEmpty",
+	"design",
+	"designEmpty",
 }
 
 // textsEn are the messages without arguments in en.
@@ -227,31 +255,30 @@ var textsEn = i18n.NewTexts(""+
 	"Save"+
 	"Save As…"+
 	"Settings…"+
-	"Undo Chart Change"+
-	"Redo Chart Change"+
+	"Undo Change"+
+	"Redo Change"+
 	"Zoom In"+
 	"Zoom Out"+
 	"Fit to Window"+
 	"Left to Right"+
 	"Top to Bottom"+
-	"Ask the assistant to draw a flow, or open a .flow file."+
+	"Ask the assistant to design an app or draw a flow, or open a .flow file."+
 	"Saved"+
 	"Assistant"+
 	"New Chat"+
 	"Message"+
-	"Describe the process you want to chart…"+
+	"Describe the app or process you want to design…"+
 	"Send"+
 	"Stop"+
 	"Jump to the latest message"+
-	"Let's draw a flow together"+
-	"Describe a process, and the assistant asks what it needs and draws it on the left."+
+	"Let's design an app together"+
+	"Describe an app or a process, and the assistant asks what it needs and draws its screens and flows on the left."+
 	"Set up an OpenAI-compatible provider to start chatting."+
 	"Open Settings"+
 	"Thinking"+
 	"Stopped"+
 	"Something went wrong."+
 	"Retry"+
-	"Read the chart"+
 	"Add nodes"+
 	"Update node"+
 	"Remove nodes"+
@@ -259,7 +286,6 @@ var textsEn = i18n.NewTexts(""+
 	"Disconnect"+
 	"Layout"+
 	"Redraw the chart"+
-	"Show node"+
 	"List folder"+
 	"Read file"+
 	"Find files"+
@@ -284,7 +310,21 @@ var textsEn = i18n.NewTexts(""+
 	"Skipped"+
 	"Statistics"+
 	"Send usage statistics"+
-	"Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor.",
+	"Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor."+
+	"Read the project"+
+	"Add screen"+
+	"Draw interface"+
+	"Remove screen"+
+	"Add flow"+
+	"Remove flow"+
+	"Redraw the project"+
+	"Show"+
+	"Screens"+
+	"The screens the assistant designs appear here."+
+	"Flows"+
+	"Ask the assistant to draw a flow of this screen."+
+	"Design"+
+	"This screen has no design yet. Ask the assistant to draw one.",
 	[]uint16{
 		11,
 		8,
@@ -297,31 +337,30 @@ var textsEn = i18n.NewTexts(""+
 		4,
 		10,
 		11,
-		17,
-		17,
+		11,
+		11,
 		7,
 		8,
 		13,
 		13,
 		13,
-		55,
+		72,
 		5,
 		9,
 		8,
 		7,
-		41,
+		49,
 		4,
 		4,
 		26,
-		26,
-		82,
+		28,
+		111,
 		55,
 		13,
 		8,
 		7,
 		21,
 		5,
-		14,
 		9,
 		11,
 		12,
@@ -329,7 +368,6 @@ var textsEn = i18n.NewTexts(""+
 		10,
 		6,
 		16,
-		9,
 		11,
 		9,
 		10,
@@ -355,6 +393,20 @@ var textsEn = i18n.NewTexts(""+
 		10,
 		21,
 		117,
+		16,
+		10,
+		14,
+		13,
+		8,
+		11,
+		18,
+		4,
+		7,
+		46,
+		5,
+		48,
+		6,
+		61,
 	})
 
 // textsZhHans are the messages without arguments in zh-Hans.
@@ -370,31 +422,30 @@ var textsZhHans = i18n.NewTexts(""+
 	"保存"+
 	"另存为…"+
 	"设置…"+
-	"撤销图表更改"+
-	"重做图表更改"+
+	"撤销更改"+
+	"重做更改"+
 	"放大"+
 	"缩小"+
 	"适合窗口"+
 	"从左到右"+
 	"从上到下"+
-	"让助手画一个流程，或打开 .flow 文件。"+
+	"让助手设计一个应用或画一个流程，或打开 .flow 文件。"+
 	"已保存"+
 	"助手"+
 	"新对话"+
 	"消息"+
-	"描述你想绘制的流程…"+
+	"描述你想设计的应用或流程…"+
 	"发送"+
 	"停止"+
 	"跳到最新消息"+
-	"一起来画流程图"+
-	"描述一个流程，助手会询问所需的细节，并在左侧画出来。"+
+	"一起来设计应用"+
+	"描述一个应用或流程，助手会询问所需的细节，并在左侧画出它的界面和流程。"+
 	"配置一个 OpenAI 兼容的提供商后即可开始对话。"+
 	"打开设置"+
 	"思考"+
 	"已停止"+
 	"出错了。"+
 	"重试"+
-	"读取图表"+
 	"添加节点"+
 	"修改节点"+
 	"删除节点"+
@@ -402,7 +453,6 @@ var textsZhHans = i18n.NewTexts(""+
 	"删除连线"+
 	"布局"+
 	"重绘图表"+
-	"定位节点"+
 	"列出文件夹"+
 	"读取文件"+
 	"查找文件"+
@@ -427,7 +477,21 @@ var textsZhHans = i18n.NewTexts(""+
 	"已跳过"+
 	"统计"+
 	"发送使用统计"+
-	"发送应用的使用次数和时长，不含流程图、消息或个人信息，帮助改进 Flow Editor。",
+	"发送应用的使用次数和时长，不含流程图、消息或个人信息，帮助改进 Flow Editor。"+
+	"读取项目"+
+	"添加界面"+
+	"绘制界面"+
+	"删除界面"+
+	"添加流程"+
+	"删除流程"+
+	"重绘项目"+
+	"定位"+
+	"界面"+
+	"助手设计的界面会出现在这里。"+
+	"流程"+
+	"让助手为这个界面画一个流程。"+
+	"设计"+
+	"这个界面还没有设计，让助手画一个吧。",
 	[]uint16{
 		15,
 		9,
@@ -440,24 +504,24 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		12,
 		9,
-		18,
-		18,
+		12,
+		12,
 		6,
 		6,
 		12,
 		12,
 		12,
-		52,
+		73,
 		9,
 		6,
 		9,
 		6,
-		30,
+		39,
 		6,
 		6,
 		18,
 		21,
-		78,
+		105,
 		62,
 		12,
 		6,
@@ -467,11 +531,9 @@ var textsZhHans = i18n.NewTexts(""+
 		12,
 		12,
 		12,
-		12,
 		6,
 		12,
 		6,
-		12,
 		12,
 		15,
 		12,
@@ -498,6 +560,20 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		18,
 		108,
+		12,
+		12,
+		12,
+		12,
+		12,
+		12,
+		12,
+		6,
+		6,
+		42,
+		6,
+		42,
+		6,
+		54,
 	})
 
 // texts returns the messages without arguments in lang, nil for a
@@ -577,6 +653,12 @@ func Supply(lang string, t Translation) {
 	}
 	if t.FolderFailed != nil {
 		s.FolderFailed = t.FolderFailed
+	}
+	if t.ScreenCount != nil {
+		s.ScreenCount = t.ScreenCount
+	}
+	if t.FlowCount != nil {
+		s.FlowCount = t.FlowCount
 	}
 	supplied[lang] = s
 	Catalog.Add(lang)
@@ -670,14 +752,14 @@ func Settings(cx *core.Scope) string { return For(cx).Settings() }
 // Settings is the package's Settings in the language of msgs.
 func (msgs Messages) Settings() string { return msgs.text(textSettings) }
 
-// UndoChange says "Undo Chart Change"
+// UndoChange says "Undo Change"
 // in the language the app shows under cx.
 func UndoChange(cx *core.Scope) string { return For(cx).UndoChange() }
 
 // UndoChange is the package's UndoChange in the language of msgs.
 func (msgs Messages) UndoChange() string { return msgs.text(textUndoChange) }
 
-// RedoChange says "Redo Chart Change"
+// RedoChange says "Redo Change"
 // in the language the app shows under cx.
 func RedoChange(cx *core.Scope) string { return For(cx).RedoChange() }
 
@@ -719,7 +801,7 @@ func TopToBottom(cx *core.Scope) string { return For(cx).TopToBottom() }
 // TopToBottom is the package's TopToBottom in the language of msgs.
 func (msgs Messages) TopToBottom() string { return msgs.text(textTopToBottom) }
 
-// DiagramEmpty says "Ask the assistant to draw a flow, or open a .flow file."
+// DiagramEmpty says "Ask the assistant to design an app or draw a flow, or open a .flow file."
 // in the language the app shows under cx.
 func DiagramEmpty(cx *core.Scope) string { return For(cx).DiagramEmpty() }
 
@@ -842,7 +924,7 @@ func Message(cx *core.Scope) string { return For(cx).Message() }
 // Message is the package's Message in the language of msgs.
 func (msgs Messages) Message() string { return msgs.text(textMessage) }
 
-// Placeholder says "Describe the process you want to chart…"
+// Placeholder says "Describe the app or process you want to design…"
 // in the language the app shows under cx.
 func Placeholder(cx *core.Scope) string { return For(cx).Placeholder() }
 
@@ -870,14 +952,14 @@ func JumpToLatest(cx *core.Scope) string { return For(cx).JumpToLatest() }
 // JumpToLatest is the package's JumpToLatest in the language of msgs.
 func (msgs Messages) JumpToLatest() string { return msgs.text(textJumpToLatest) }
 
-// EmptyTitle says "Let's draw a flow together"
+// EmptyTitle says "Let's design an app together"
 // in the language the app shows under cx.
 func EmptyTitle(cx *core.Scope) string { return For(cx).EmptyTitle() }
 
 // EmptyTitle is the package's EmptyTitle in the language of msgs.
 func (msgs Messages) EmptyTitle() string { return msgs.text(textEmptyTitle) }
 
-// EmptyDetail says "Describe a process, and the assistant asks what it needs and draws it on the left."
+// EmptyDetail says "Describe an app or a process, and the assistant asks what it needs and draws its screens and flows on the left."
 // in the language the app shows under cx.
 func EmptyDetail(cx *core.Scope) string { return For(cx).EmptyDetail() }
 
@@ -1003,13 +1085,6 @@ func Retry(cx *core.Scope) string { return For(cx).Retry() }
 // Retry is the package's Retry in the language of msgs.
 func (msgs Messages) Retry() string { return msgs.text(textRetry) }
 
-// ToolGetFlow says "Read the chart"
-// in the language the app shows under cx.
-func ToolGetFlow(cx *core.Scope) string { return For(cx).ToolGetFlow() }
-
-// ToolGetFlow is the package's ToolGetFlow in the language of msgs.
-func (msgs Messages) ToolGetFlow() string { return msgs.text(textToolGetFlow) }
-
 // ToolAddNodes says "Add nodes"
 // in the language the app shows under cx.
 func ToolAddNodes(cx *core.Scope) string { return For(cx).ToolAddNodes() }
@@ -1058,13 +1133,6 @@ func ToolReplaceFlow(cx *core.Scope) string { return For(cx).ToolReplaceFlow() }
 
 // ToolReplaceFlow is the package's ToolReplaceFlow in the language of msgs.
 func (msgs Messages) ToolReplaceFlow() string { return msgs.text(textToolReplaceFlow) }
-
-// ToolFocus says "Show node"
-// in the language the app shows under cx.
-func ToolFocus(cx *core.Scope) string { return For(cx).ToolFocus() }
-
-// ToolFocus is the package's ToolFocus in the language of msgs.
-func (msgs Messages) ToolFocus() string { return msgs.text(textToolFocus) }
 
 // ToolListDir says "List folder"
 // in the language the app shows under cx.
@@ -1284,3 +1352,179 @@ func StatsDetail(cx *core.Scope) string { return For(cx).StatsDetail() }
 
 // StatsDetail is the package's StatsDetail in the language of msgs.
 func (msgs Messages) StatsDetail() string { return msgs.text(textStatsDetail) }
+
+// ToolGetProject says "Read the project"
+// in the language the app shows under cx.
+func ToolGetProject(cx *core.Scope) string { return For(cx).ToolGetProject() }
+
+// ToolGetProject is the package's ToolGetProject in the language of msgs.
+func (msgs Messages) ToolGetProject() string { return msgs.text(textToolGetProject) }
+
+// ToolAddScreen says "Add screen"
+// in the language the app shows under cx.
+func ToolAddScreen(cx *core.Scope) string { return For(cx).ToolAddScreen() }
+
+// ToolAddScreen is the package's ToolAddScreen in the language of msgs.
+func (msgs Messages) ToolAddScreen() string { return msgs.text(textToolAddScreen) }
+
+// ToolSetUI says "Draw interface"
+// in the language the app shows under cx.
+func ToolSetUI(cx *core.Scope) string { return For(cx).ToolSetUI() }
+
+// ToolSetUI is the package's ToolSetUI in the language of msgs.
+func (msgs Messages) ToolSetUI() string { return msgs.text(textToolSetUI) }
+
+// ToolRemoveScreen says "Remove screen"
+// in the language the app shows under cx.
+func ToolRemoveScreen(cx *core.Scope) string { return For(cx).ToolRemoveScreen() }
+
+// ToolRemoveScreen is the package's ToolRemoveScreen in the language of msgs.
+func (msgs Messages) ToolRemoveScreen() string { return msgs.text(textToolRemoveScreen) }
+
+// ToolAddFlow says "Add flow"
+// in the language the app shows under cx.
+func ToolAddFlow(cx *core.Scope) string { return For(cx).ToolAddFlow() }
+
+// ToolAddFlow is the package's ToolAddFlow in the language of msgs.
+func (msgs Messages) ToolAddFlow() string { return msgs.text(textToolAddFlow) }
+
+// ToolRemoveFlow says "Remove flow"
+// in the language the app shows under cx.
+func ToolRemoveFlow(cx *core.Scope) string { return For(cx).ToolRemoveFlow() }
+
+// ToolRemoveFlow is the package's ToolRemoveFlow in the language of msgs.
+func (msgs Messages) ToolRemoveFlow() string { return msgs.text(textToolRemoveFlow) }
+
+// ToolReplaceProject says "Redraw the project"
+// in the language the app shows under cx.
+func ToolReplaceProject(cx *core.Scope) string { return For(cx).ToolReplaceProject() }
+
+// ToolReplaceProject is the package's ToolReplaceProject in the language of msgs.
+func (msgs Messages) ToolReplaceProject() string { return msgs.text(textToolReplaceProject) }
+
+// ToolShow says "Show"
+// in the language the app shows under cx.
+func ToolShow(cx *core.Scope) string { return For(cx).ToolShow() }
+
+// ToolShow is the package's ToolShow in the language of msgs.
+func (msgs Messages) ToolShow() string { return msgs.text(textToolShow) }
+
+// Screens says "Screens"
+// in the language the app shows under cx.
+func Screens(cx *core.Scope) string { return For(cx).Screens() }
+
+// Screens is the package's Screens in the language of msgs.
+func (msgs Messages) Screens() string { return msgs.text(textScreens) }
+
+// ScreenCount says "{count, plural, one {# screen} other {# screens}}"
+// in the language the app shows under cx.
+func ScreenCount(cx *core.Scope, count int) string { return For(cx).ScreenCount(count) }
+
+// ScreenCount is the package's ScreenCount in the language of msgs.
+func (msgs Messages) ScreenCount(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.ScreenCount(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].ScreenCount; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			var b strings.Builder
+			switch i18n.Cardinal("en", float64(count)) {
+			case i18n.One:
+				b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(count))))
+				b.WriteString(" screen")
+			default:
+				b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(count))))
+				b.WriteString(" screens")
+			}
+			return b.String()
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(count)) + " 个界面"
+		}
+	}
+}
+
+// ScreensEmpty says "The screens the assistant designs appear here."
+// in the language the app shows under cx.
+func ScreensEmpty(cx *core.Scope) string { return For(cx).ScreensEmpty() }
+
+// ScreensEmpty is the package's ScreensEmpty in the language of msgs.
+func (msgs Messages) ScreensEmpty() string { return msgs.text(textScreensEmpty) }
+
+// Flows says "Flows"
+// in the language the app shows under cx.
+func Flows(cx *core.Scope) string { return For(cx).Flows() }
+
+// Flows is the package's Flows in the language of msgs.
+func (msgs Messages) Flows() string { return msgs.text(textFlows) }
+
+// FlowCount says "{count, plural, =0 {No flows} one {# flow} other {# flows}}"
+// in the language the app shows under cx.
+func FlowCount(cx *core.Scope, count int) string { return For(cx).FlowCount(count) }
+
+// FlowCount is the package's FlowCount in the language of msgs.
+func (msgs Messages) FlowCount(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.FlowCount(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].FlowCount; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			var b strings.Builder
+			switch {
+			case count == 0:
+				b.WriteString("No flows")
+			default:
+				switch i18n.Cardinal("en", float64(count)) {
+				case i18n.One:
+					b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(count))))
+					b.WriteString(" flow")
+				default:
+					b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(count))))
+					b.WriteString(" flows")
+				}
+			}
+			return b.String()
+		case "zh-Hans":
+			var b strings.Builder
+			switch {
+			case count == 0:
+				b.WriteString("无流程")
+			default:
+				switch i18n.Cardinal("zh-Hans", float64(count)) {
+				default:
+					b.WriteString(i18n.FormatNumber("zh-Hans", float64(count)))
+					b.WriteString(" 个流程")
+				}
+			}
+			return b.String()
+		}
+	}
+}
+
+// FlowEmpty says "Ask the assistant to draw a flow of this screen."
+// in the language the app shows under cx.
+func FlowEmpty(cx *core.Scope) string { return For(cx).FlowEmpty() }
+
+// FlowEmpty is the package's FlowEmpty in the language of msgs.
+func (msgs Messages) FlowEmpty() string { return msgs.text(textFlowEmpty) }
+
+// Design says "Design"
+// in the language the app shows under cx.
+func Design(cx *core.Scope) string { return For(cx).Design() }
+
+// Design is the package's Design in the language of msgs.
+func (msgs Messages) Design() string { return msgs.text(textDesign) }
+
+// DesignEmpty says "This screen has no design yet. Ask the assistant to draw one."
+// in the language the app shows under cx.
+func DesignEmpty(cx *core.Scope) string { return For(cx).DesignEmpty() }
+
+// DesignEmpty is the package's DesignEmpty in the language of msgs.
+func (msgs Messages) DesignEmpty() string { return msgs.text(textDesignEmpty) }

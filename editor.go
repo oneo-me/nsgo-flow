@@ -10,6 +10,7 @@ import (
 	"github.com/oneo-me/nsgo/ui"
 	uiflow "github.com/oneo-me/nsgo/ui/flow"
 
+	"github.com/oneo-me/nsgo-flow/agent"
 	"github.com/oneo-me/nsgo-flow/flowfile"
 	"github.com/oneo-me/nsgo-flow/locales"
 )
@@ -20,15 +21,19 @@ const historyLimit = 200
 // editor is the open flow document and what the views share of it.
 type editor struct {
 	cx  *core.Scope
-	doc *core.Signal[flowfile.Doc]
+	doc *core.Signal[flowfile.Project]
 	// path is the file the document came from or was saved to, "" for a
 	// new one; dirty says it changed since.
 	path  *core.Signal[string]
 	dirty *core.Signal[bool]
-	// selected is the node the user or the assistant selected.
-	selected *core.Signal[string]
+	// screen and flow are the IDs of the open screen and of its open
+	// flow, "" for none; selected is the node of the flow the user or the
+	// assistant selected. design says the screen's design shows instead
+	// of the flow.
+	screen, flow, selected *core.Signal[string]
+	design                 *core.Signal[bool]
 	// undos and redos are documents before and after changes.
-	undos, redos *core.Signal[[]flowfile.Doc]
+	undos, redos *core.Signal[[]flowfile.Project]
 	// group is the key of the last change, whose undo later changes with
 	// the same key join.
 	group  string
@@ -39,12 +44,19 @@ type editor struct {
 }
 
 func newEditor(cx *core.Scope, toasts *ui.Toaster) *editor {
-	never := func(a, b flowfile.Doc) bool { return false }
-	stacks := func(a, b []flowfile.Doc) bool { return false }
-	return &editor{cx: cx, doc: core.NewSignalFunc(cx, flowfile.Doc{}, never),
-		path: core.NewSignal(cx, ""), dirty: core.NewSignal(cx, false), selected: core.NewSignal(cx, ""),
-		undos: core.NewSignalFunc(cx, []flowfile.Doc(nil), stacks), redos: core.NewSignalFunc(cx, []flowfile.Doc(nil), stacks),
+	never := func(a, b flowfile.Project) bool { return false }
+	stacks := func(a, b []flowfile.Project) bool { return false }
+	e := &editor{cx: cx, doc: core.NewSignalFunc(cx, flowfile.Project{}, never),
+		path: core.NewSignal(cx, ""), dirty: core.NewSignal(cx, false),
+		screen: core.NewSignal(cx, ""), flow: core.NewSignal(cx, ""), selected: core.NewSignal(cx, ""), design: core.NewSignal(cx, false),
+		undos: core.NewSignalFunc(cx, []flowfile.Project(nil), stacks), redos: core.NewSignalFunc(cx, []flowfile.Project(nil), stacks),
 		camera: &uiflow.State{}, toasts: toasts}
+	// Another flow shows fitted, once the batch that opened it is over.
+	cx.Effect(func() {
+		e.flow.Get()
+		cx.Post(e.camera.Fit)
+	})
+	return e
 }
 
 // name is the document's file name, or Untitled.
@@ -55,10 +67,78 @@ func (e *editor) name() string {
 	return locales.For(e.cx).Untitled()
 }
 
+// openScreen is the open screen, false when none is.
+func (e *editor) openScreen() (flowfile.Screen, bool) {
+	p := e.doc.Get()
+	if i := p.ScreenIndex(e.screen.Get()); i >= 0 {
+		return p.Screens[i], true
+	}
+	return flowfile.Screen{}, false
+}
+
+// flowDoc is the flow with id, empty when there is none.
+func (e *editor) flowDoc(id string) flowfile.Doc {
+	p := e.doc.Get()
+	if i, j := p.FlowIndex(id); i >= 0 {
+		return p.Screens[i].Flows[j].Doc
+	}
+	return flowfile.Doc{}
+}
+
+// at is where the user is looking.
+func (e *editor) at() agent.Location {
+	return agent.Location{Screen: e.screen.GetUntracked(), Flow: e.flow.GetUntracked(), Node: e.selected.GetUntracked(),
+		Design: e.design.GetUntracked()}
+}
+
+// show opens the screen of l on its design or its flow, and selects the
+// node, falling back to the first screen when it is gone. A screen
+// opened without a flow shows its design, or its first flow while it has
+// no design.
+func (e *editor) show(l agent.Location) {
+	p := e.doc.GetUntracked()
+	si := p.ScreenIndex(l.Screen)
+	fi, _ := p.FlowIndex(l.Flow)
+	chosen := fi >= 0 && (si < 0 || fi == si)
+	if chosen {
+		si = fi
+	} else {
+		l.Flow = ""
+	}
+	if si < 0 && len(p.Screens) > 0 {
+		si = 0
+	}
+	if si < 0 {
+		l = agent.Location{}
+	} else {
+		s := p.Screens[si]
+		l.Screen = s.ID
+		l.Design = l.Design || !chosen && len(s.UI) > 0
+		if l.Flow == "" && len(s.Flows) > 0 {
+			l.Flow = s.Flows[0].ID
+		}
+		l.Design = l.Design || l.Flow == ""
+	}
+	if l.Node != "" {
+		if _, ok := e.flowDoc(l.Flow).Node(l.Node); !ok {
+			l.Node = ""
+		}
+	}
+	e.cx.Batch(func() {
+		e.screen.Set(l.Screen)
+		e.flow.Set(l.Flow)
+		e.design.Set(l.Design)
+		e.selected.Set(l.Node)
+	})
+	if l.Node != "" {
+		e.cx.Post(func() { e.camera.Reveal(l.Node) })
+	}
+}
+
 // change replaces the document with an edit of it, which undo reverts.
 // Consecutive changes of one nonempty group, such as an assistant's
 // turn, undo together.
-func (e *editor) change(d flowfile.Doc, group string) {
+func (e *editor) change(d flowfile.Project, group string) {
 	before := e.doc.GetUntracked()
 	joined := group != "" && group == e.group && len(e.undos.GetUntracked()) > 0
 	e.group = group
@@ -73,11 +153,7 @@ func (e *editor) change(d flowfile.Doc, group string) {
 		e.redos.Set(nil)
 		e.doc.Set(d)
 		e.dirty.Set(true)
-		if s := e.selected.GetUntracked(); s != "" {
-			if _, ok := d.Node(s); !ok {
-				e.selected.Set("")
-			}
-		}
+		e.show(e.at())
 	})
 }
 
@@ -85,7 +161,7 @@ func (e *editor) undo() { e.step(e.undos, e.redos) }
 func (e *editor) redo() { e.step(e.redos, e.undos) }
 
 // step moves the document from one history stack to the other.
-func (e *editor) step(from, to *core.Signal[[]flowfile.Doc]) {
+func (e *editor) step(from, to *core.Signal[[]flowfile.Project]) {
 	list := from.GetUntracked()
 	if len(list) == 0 {
 		return
@@ -96,27 +172,34 @@ func (e *editor) step(from, to *core.Signal[[]flowfile.Doc]) {
 		from.Set(list[: len(list)-1 : len(list)-1])
 		e.doc.Set(list[len(list)-1])
 		e.dirty.Set(true)
+		e.show(e.at())
 	})
 }
 
 // replace shows another document, forgetting the history.
-func (e *editor) replace(d flowfile.Doc, path string) {
+func (e *editor) replace(d flowfile.Project, path string) {
+	flow := e.flow.GetUntracked()
 	e.cx.Batch(func() {
 		e.doc.Set(d)
 		e.path.Set(path)
 		e.dirty.Set(false)
-		e.selected.Set("")
 		e.undos.Set(nil)
 		e.redos.Set(nil)
+		e.screen.Set("")
+		e.flow.Set("")
+		e.show(agent.Location{})
 	})
 	e.group = ""
 	if e.opened != nil {
 		e.opened()
 	}
-	e.cx.Post(e.camera.Fit)
+	if e.flow.GetUntracked() == flow {
+		// Another flow fits as it opens.
+		e.cx.Post(e.camera.Fit)
+	}
 }
 
-func (e *editor) newFlow() { e.replace(flowfile.Doc{}, "") }
+func (e *editor) newFlow() { e.replace(flowfile.Project{}, "") }
 
 // open asks for a flow file and shows it.
 func (e *editor) open() {
@@ -143,7 +226,7 @@ func (e *editor) load(f core.File) error {
 	if err != nil {
 		return err
 	}
-	d, err := flowfile.Parse(string(data))
+	d, err := flowfile.ParseProject(string(data))
 	if err != nil {
 		return err
 	}
@@ -161,7 +244,7 @@ func (e *editor) openPath(path string) error {
 	if err != nil {
 		return err
 	}
-	d, err := flowfile.Parse(string(data))
+	d, err := flowfile.ParseProject(string(data))
 	if err != nil {
 		return err
 	}

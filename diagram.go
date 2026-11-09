@@ -10,16 +10,16 @@ import (
 	"github.com/oneo-me/nsgo-flow/locales"
 )
 
-// diagramData maps the document onto the diagram's data. Each node's
-// face reads its node from the document, as the view keeps a face while
-// its ID stays.
-func diagramData(e *editor) func() uiflow.Data {
+// diagramData maps the flow with id, the open one for "", onto the
+// diagram's data. Each node's face reads its node from the document, as
+// the view keeps a face while its ID stays.
+func diagramData(e *editor, flow string) func() uiflow.Data {
 	return func() uiflow.Data {
-		d := e.doc.Get()
+		d := e.flowDoc(cmp(flow, e.flow.Get()))
 		var data uiflow.Data
 		for _, n := range d.Nodes {
 			data.Nodes = append(data.Nodes, uiflow.Node{ID: n.ID, Label: n.Label, Muted: n.Status == "skipped",
-				Content: nodeCard{e: e, id: n.ID}})
+				Content: nodeCard{e: e, flow: flow, id: n.ID}})
 		}
 		for _, l := range d.Edges {
 			data.Edges = append(data.Edges, uiflow.Edge{Source: l.From, Target: l.To, Label: l.Label, Dashed: l.Dashed})
@@ -28,17 +28,28 @@ func diagramData(e *editor) func() uiflow.Data {
 	}
 }
 
+// diagramDirection is the way the flow with id, the open one for "",
+// points.
+func diagramDirection(e *editor, flow string) func() uiflow.Direction {
+	return func() uiflow.Direction {
+		if e.flowDoc(cmp(flow, e.flow.Get())).Direction == flowfile.Right {
+			return uiflow.LeftToRight
+		}
+		return uiflow.TopToBottom
+	}
+}
+
 // nodeCard is a node's face: its kind's icon tile, label and note, and
 // its status above them.
 type nodeCard struct {
-	e  *editor
-	id string
+	e        *editor
+	flow, id string
 }
 
 // Render implements core.Node.
 func (c nodeCard) Render(cx *core.Scope) core.Node {
 	node := core.NewMemo(cx, func() flowfile.Node {
-		n, _ := c.e.doc.Get().Node(c.id)
+		n, _ := c.e.flowDoc(cmp(c.flow, c.e.flow.Get())).Node(c.id)
 		return n
 	})
 	return core.Dynamic(func(cx *core.Scope) core.Node { return card(cx, node.Get()) })
@@ -91,20 +102,12 @@ func card(cx *core.Scope, n flowfile.Node) core.Node {
 	return card
 }
 
-// diagramPane is the chart filling the pane, a header with the file
-// above it and the view's tools over it.
-func diagramPane(cx *core.Scope, e *editor) core.Node {
+// flowPane is the open flow's chart, with the view's tools over it.
+func flowPane(cx *core.Scope, e *editor) core.Node {
 	tr := locales.For(cx)
 	colors := ui.ColorsOf(cx)
 	fin := ui.FinOf(cx)
-	data := diagramData(e)
-	empty := func() bool { return len(e.doc.Get().Nodes) == 0 }
-	direction := func() uiflow.Direction {
-		if e.doc.Get().Direction == flowfile.Right {
-			return uiflow.LeftToRight
-		}
-		return uiflow.TopToBottom
-	}
+	full := func() bool { return len(e.flowDoc(e.flow.Get()).Nodes) > 0 }
 	tool := func(icon func() *core.SVG, label string, enabled func() bool, press func(), testID string) core.Node {
 		b := ui.IconButton{Icon: icon, Label: label, OnPress: press, TestID: testID}
 		if enabled != nil {
@@ -112,7 +115,6 @@ func diagramPane(cx *core.Scope, e *editor) core.Node {
 		}
 		return b
 	}
-	full := func() bool { return !empty() }
 	toolbar := core.View{Style: core.Style{Direction: core.Row, Gap: 2, Padding: core.All(4), CornerRadius: ui.RadiusControl + 4, BorderWidth: 1},
 		StyleFunc: func() core.Style {
 			return fin.Raised().Over(core.Style{Background: colors.Surface(), BorderColor: colors.Border()})
@@ -120,51 +122,34 @@ func diagramPane(cx *core.Scope, e *editor) core.Node {
 		Children: []core.Node{
 			tool(lucide.Undo2, tr.UndoChange(), func() bool { return len(e.undos.Get()) > 0 }, e.undo, "undo"),
 			tool(lucide.Redo2, tr.RedoChange(), func() bool { return len(e.redos.Get()) > 0 }, e.redo, "redo"),
-			tool(lucide.ArrowRightLeft, tr.LeftToRight(), full, func() { e.toggleDirection() }, "direction"),
-			tool(lucide.ZoomOut, tr.ZoomOut(), full, e.camera.ZoomOut, "zoom-out"),
-			tool(lucide.ZoomIn, tr.ZoomIn(), full, e.camera.ZoomIn, "zoom-in"),
-			tool(lucide.Scan, tr.Fit(), full, e.camera.Fit, "fit"),
+			tool(lucide.ArrowRightLeft, tr.LeftToRight(), full, e.toggleDirection, "direction"),
+			tool(lucide.ZoomOut, tr.ZoomOut(), full, func() { e.camera.ZoomOut() }, "zoom-out"),
+			tool(lucide.ZoomIn, tr.ZoomIn(), full, func() { e.camera.ZoomIn() }, "zoom-in"),
+			tool(lucide.Scan, tr.Fit(), full, func() { e.camera.Fit() }, "fit"),
 		}}
-	title := func() string {
-		if t := e.doc.Get().Title; t != "" {
-			return t
-		}
-		return e.name()
-	}
-	header := core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 8, Height: core.Pt(44), Padding: core.Symmetric(0, 12),
-		Borders: core.Edges{Bottom: 1}},
-		StyleFunc: func() core.Style { return core.Style{BorderColors: core.EdgeColors{Bottom: colors.Line()}} },
-		Children: []core.Node{
-			ui.Icon(lucide.Workflow, 16, colors.Muted),
-			core.Text{ContentFunc: title, MaxLines: 1, Style: ui.TypeBody.Merge(core.Style{FontWeight: ui.Semibold, FlexShrink: 1, MinWidth: core.Pt(0)}),
-				StyleFunc: ui.Colored(colors.Text), TestID: "doc-title"},
-			core.Show{When: e.dirty.Get, Then: func(*core.Scope) core.Node {
-				return ui.Text(tr.Edited(), 12, ui.Regular, colors.Muted)
-			}},
-			ui.Spacer{},
-			tool(lucide.FilePlus, tr.NewFlow(), nil, e.newFlow, "new"),
-			tool(lucide.FolderOpen, tr.Open(), nil, e.open, "open"),
-			tool(lucide.Save, tr.Save(), nil, e.save, "save"),
-		}}
-	view := uiflow.View{TestID: "flow", State: e.camera, Data: data, Direction: direction,
+	// One view follows the open flow: remounting a chart is costly.
+	view := uiflow.View{TestID: "flow", State: e.camera, Data: diagramData(e, ""), Direction: diagramDirection(e, ""),
 		LabelFunc: func() string {
-			d := e.doc.Get()
+			d := e.flowDoc(e.flow.Get())
 			return tr.DiagramLabel(len(d.Nodes), len(d.Edges))
 		},
-		EmptyText: tr.DiagramEmpty(), Selected: e.selected.Get, OnSelect: e.selected.Set, Overlay: toolbar}
-	return core.View{Style: ui.FillRest,
-		StyleFunc: ui.Filled(colors.Background),
-		Children:  []core.Node{header, view}}
+		EmptyText: tr.FlowEmpty(), Selected: e.selected.Get, OnSelect: e.selected.Set, Overlay: toolbar}
+	return core.View{Style: ui.FillRest, StyleFunc: ui.Filled(colors.Background), Children: []core.Node{view}}
 }
 
-// toggleDirection turns the chart between down and right.
+// toggleDirection turns the open flow between down and right.
 func (e *editor) toggleDirection() {
-	d := e.doc.GetUntracked().Clone()
-	if d.Direction == flowfile.Right {
-		d.Direction = flowfile.Down
-	} else {
-		d.Direction = flowfile.Right
+	p := e.doc.GetUntracked().Clone()
+	i, j := p.FlowIndex(e.flow.GetUntracked())
+	if i < 0 {
+		return
 	}
-	e.change(d, "")
-	e.cx.Post(e.camera.Fit)
+	f := &p.Screens[i].Flows[j]
+	if f.Direction == flowfile.Right {
+		f.Direction = flowfile.Down
+	} else {
+		f.Direction = flowfile.Right
+	}
+	e.change(p, "")
+	e.cx.Post(func() { e.camera.Fit() })
 }

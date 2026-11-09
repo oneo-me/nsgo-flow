@@ -11,14 +11,14 @@ open: Open…
 save: Save
 saveAs: Save As…
 settings: Settings…
-undoChange: Undo Chart Change
-redoChange: Redo Chart Change
+undoChange: Undo Change
+redoChange: Redo Change
 zoomIn: Zoom In
 zoomOut: Zoom Out
 fit: Fit to Window
 leftToRight: Left to Right
 topToBottom: Top to Bottom
-diagramEmpty: Ask the assistant to draw a flow, or open a .flow file.
+diagramEmpty: Ask the assistant to design an app or draw a flow, or open a .flow file.
 diagramLabel: "Flow chart with {nodes, plural, one {# node} other {# nodes}} and {edges, plural, one {# edge} other {# edges}}."
 openFailed: "Could not open the file: {error}"
 saveFailed: "Could not save the file: {error}"
@@ -26,12 +26,12 @@ saved: Saved
 assistant: Assistant
 newChat: New Chat
 message: Message
-placeholder: Describe the process you want to chart…
+placeholder: Describe the app or process you want to design…
 send: Send
 stop: Stop
 jumpToLatest: Jump to the latest message
-emptyTitle: Let's draw a flow together
-emptyDetail: Describe a process, and the assistant asks what it needs and draws it on the left.
+emptyTitle: Let's design an app together
+emptyDetail: Describe an app or a process, and the assistant asks what it needs and draws its screens and flows on the left.
 noProvider: Set up an OpenAI-compatible provider to start chatting.
 openSettings: Open Settings
 worked: "Worked for {seconds, number}s"
@@ -41,7 +41,6 @@ thinking: Thinking
 stopped: Stopped
 failed: Something went wrong.
 retry: Retry
-toolGetFlow: Read the chart
 toolAddNodes: Add nodes
 toolUpdateNode: Update node
 toolRemoveNodes: Remove nodes
@@ -49,7 +48,6 @@ toolAddEdges: Connect
 toolRemoveEdges: Disconnect
 toolSetLayout: Layout
 toolReplaceFlow: Redraw the chart
-toolFocus: Show node
 toolListDir: List folder
 toolReadFile: Read file
 toolGlob: Find files
@@ -77,3 +75,19 @@ statusSkipped: Skipped
 statsSection: Statistics
 statsSend: Send usage statistics
 statsDetail: Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor.
+toolGetProject: Read the project
+toolAddScreen: Add screen
+toolSetUI: Draw interface
+toolRemoveScreen: Remove screen
+toolAddFlow: Add flow
+toolRemoveFlow: Remove flow
+toolReplaceProject: Redraw the project
+toolShow: Show
+screens: Screens
+screenCount: "{count, plural, one {# screen} other {# screens}}"
+screensEmpty: The screens the assistant designs appear here.
+flows: Flows
+flowCount: "{count, plural, =0 {No flows} one {# flow} other {# flows}}"
+flowEmpty: Ask the assistant to draw a flow of this screen.
+design: Design
+designEmpty: This screen has no design yet. Ask the assistant to draw one.

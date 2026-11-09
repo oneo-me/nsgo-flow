@@ -1,22 +1,39 @@
 // Package flowfile reads and writes flow files: plain text documents that
-// describe a directed flow chart line by line.
+// describe an app's screens line by line, each a simple interface and the
+// flow charts of what happens on it.
 //
-//	# A comment runs to the end of the line.
-//	title "Order handling"
-//	direction down                 # or right
+//	# A comment runs to the end of the line; indentation is free.
+//	title "Shop"
 //
-//	node start "Order placed" kind=start
-//	node check "Check stock" note="Reserve every item" status=done
-//	node ship "Ship" kind=task status=doing
+//	screen signin "Sign in" device=phone   # or tablet, desktop
+//	  navbar "Sign in" back=true
+//	  input "Email" placeholder="you@example.com"
+//	  input "Password" type=password
+//	  row
+//	    checkbox "Remember me" checked=true
+//	    link "Forgot password?"
+//	  end
+//	  button "Sign in" variant=primary
 //
-//	start -> check
-//	check -> ship "in stock"
-//	check ..> start "out of stock"  # a dashed edge
-//	a -> b -> c                     # a chain of edges
+//	  flow login "Signing in"
+//	    direction right              # or down
+//	    node start "Tap Sign in" kind=start
+//	    node check "Check password" kind=decision note="Lock after 5 tries"
+//	    node home "Show home" kind=end status=done
+//	    start -> check
+//	    check -> home "valid"
+//	    check ..> start "invalid"    # a dashed edge
+//	    a -> b -> c                  # a chain of edges
 //
-// An edge may name nodes no line declares; they take their ID as their
-// label. Format writes a document back in this canonical form, without
-// the comments.
+// A screen's interface comes before its flows: one element a line, and
+// row, column and card hold the lines up to their end. Elements lists the
+// elements and their attributes. Screen and flow IDs are unique in the
+// file. An edge may name nodes no line declares; they take their ID as
+// their label.
+//
+// A file without screens is a single flow, which reads as screen main
+// with flow main. Format writes a project back in the canonical form,
+// without the comments.
 package flowfile
 
 import (
@@ -85,85 +102,114 @@ func ValidID(id string) bool {
 	return true
 }
 
-// Parse reads a flow file.
+// Parse reads the flow of a flow file without screens, as the text of a
+// single chart.
 func Parse(src string) (Doc, error) {
 	var d Doc
+	err := eachLine(src, func(toks []token) string {
+		if head := toks[0]; !head.quoted && head.text == "title" {
+			d.Title = joined(toks[1:])
+			return ""
+		}
+		return d.line(toks)
+	})
+	if err != nil {
+		return Doc{}, err
+	}
+	d.fillLabels()
+	return d, nil
+}
+
+// eachLine runs fn on the words of each line of src that has some, and
+// stops at the first that fn says is wrong.
+func eachLine(src string, fn func(toks []token) string) error {
 	for i, line := range strings.Split(strings.ReplaceAll(src, "\r\n", "\n"), "\n") {
-		n := i + 1
 		toks, err := tokenize(line)
 		if err != nil {
-			return Doc{}, &Error{n, err.Error()}
+			return &Error{i + 1, err.Error()}
 		}
 		if len(toks) == 0 {
 			continue
 		}
-		fail := func(format string, args ...any) (Doc, error) { return Doc{}, &Error{n, fmt.Sprintf(format, args...)} }
-		head := toks[0]
-		switch {
-		case !head.quoted && head.text == "title":
-			parts := make([]string, 0, len(toks)-1)
-			for _, t := range toks[1:] {
-				parts = append(parts, t.text)
-			}
-			d.Title = strings.Join(parts, " ")
-		case !head.quoted && head.text == "direction":
-			if len(toks) != 2 {
-				return fail("direction takes down or right")
-			}
-			switch dir := Direction(toks[1].text); dir {
-			case Down, Right:
-				d.Direction = dir
-			default:
-				return fail("unknown direction %q; use down or right", toks[1].text)
-			}
-		case !head.quoted && head.text == "node":
-			if len(toks) < 2 || toks[1].quoted || !ValidID(toks[1].text) {
-				return fail("node needs an ID of letters, digits, _, - or .")
-			}
-			node := Node{ID: toks[1].text}
-			for _, t := range toks[2:] {
-				key, value, ok := t.attr()
-				switch {
-				case !ok && node.Label == "":
-					node.Label = t.text
-				case !ok:
-					return fail("unexpected %q; write attributes as key=value", t.text)
-				case key == "label":
-					node.Label = value
-				case key == "note":
-					node.Note = value
-				case key == "kind":
-					if !slices.Contains(Kinds, value) {
-						return fail("unknown kind %q; use one of %s", value, strings.Join(Kinds, ", "))
-					}
-					node.Kind = value
-				case key == "status":
-					if value != "" && !slices.Contains(Statuses, value) {
-						return fail("unknown status %q; use one of %s", value, strings.Join(Statuses, ", "))
-					}
-					node.Status = value
-				default:
-					return fail("unknown attribute %q", key)
-				}
-			}
-			if i := d.node(node.ID); i >= 0 {
-				// A declaration after an edge named the node fills it in.
-				d.Nodes[i] = node
-			} else {
-				d.Nodes = append(d.Nodes, node)
-			}
-		default:
-			if err := d.parseEdges(toks); err != "" {
-				return fail("%s", err)
-			}
+		if msg := fn(toks); msg != "" {
+			return &Error{i + 1, msg}
 		}
 	}
+	return nil
+}
+
+func joined(toks []token) string {
+	parts := make([]string, 0, len(toks))
+	for _, t := range toks {
+		parts = append(parts, t.text)
+	}
+	return strings.Join(parts, " ")
+}
+
+// line reads a direction, a node or edges into d, and returns what is
+// wrong with it.
+func (d *Doc) line(toks []token) string {
+	head := toks[0]
+	switch {
+	case !head.quoted && head.text == "direction":
+		if len(toks) != 2 {
+			return "direction takes down or right"
+		}
+		switch dir := Direction(toks[1].text); dir {
+		case Down, Right:
+			d.Direction = dir
+		default:
+			return fmt.Sprintf("unknown direction %q; use down or right", toks[1].text)
+		}
+	case !head.quoted && head.text == "node":
+		if len(toks) < 2 || toks[1].quoted || !ValidID(toks[1].text) {
+			return "node needs an ID of letters, digits, _, - or ."
+		}
+		node := Node{ID: toks[1].text}
+		for _, t := range toks[2:] {
+			key, value, ok := t.attr()
+			switch {
+			case !ok && node.Label == "":
+				node.Label = t.text
+			case !ok:
+				return fmt.Sprintf("unexpected %q; write attributes as key=value", t.text)
+			case key == "label":
+				node.Label = value
+			case key == "note":
+				node.Note = value
+			case key == "kind":
+				if !slices.Contains(Kinds, value) {
+					return fmt.Sprintf("unknown kind %q; use one of %s", value, strings.Join(Kinds, ", "))
+				}
+				node.Kind = value
+			case key == "status":
+				if value != "" && !slices.Contains(Statuses, value) {
+					return fmt.Sprintf("unknown status %q; use one of %s", value, strings.Join(Statuses, ", "))
+				}
+				node.Status = value
+			default:
+				return fmt.Sprintf("unknown attribute %q", key)
+			}
+		}
+		if i := d.node(node.ID); i >= 0 {
+			// A declaration after an edge named the node fills it in.
+			d.Nodes[i] = node
+		} else {
+			d.Nodes = append(d.Nodes, node)
+		}
+	default:
+		return d.parseEdges(toks)
+	}
+	return ""
+}
+
+// fillLabels gives nodes without a label their ID.
+func (d *Doc) fillLabels() {
 	for i := range d.Nodes {
 		if d.Nodes[i].Label == "" {
 			d.Nodes[i].Label = d.Nodes[i].ID
 		}
 	}
-	return d, nil
 }
 
 // parseEdges reads a chain of edges, a -> b ..> c "label", and returns
@@ -222,22 +268,30 @@ func (d Doc) Format() string {
 	if d.Title != "" {
 		fmt.Fprintf(&b, "title %s\n", quote(d.Title))
 	}
+	d.body(&b, "", b.Len() > 0)
+	return b.String()
+}
+
+// body writes d's direction, nodes and edges, each line after indent,
+// and a blank line first when apart says.
+func (d Doc) body(b *strings.Builder, indent string, apart bool) {
 	if d.Direction != "" && d.Direction != Down {
-		fmt.Fprintf(&b, "direction %s\n", d.Direction)
+		fmt.Fprintf(b, "%sdirection %s\n", indent, d.Direction)
+		apart = true
 	}
-	if b.Len() > 0 && len(d.Nodes) > 0 {
+	if apart && len(d.Nodes) > 0 {
 		b.WriteByte('\n')
 	}
 	for _, n := range d.Nodes {
-		fmt.Fprintf(&b, "node %s %s", n.ID, quote(n.Label))
+		fmt.Fprintf(b, "%snode %s %s", indent, n.ID, quote(n.Label))
 		if n.Kind != "" && n.Kind != "task" {
-			fmt.Fprintf(&b, " kind=%s", n.Kind)
+			fmt.Fprintf(b, " kind=%s", n.Kind)
 		}
 		if n.Status != "" {
-			fmt.Fprintf(&b, " status=%s", n.Status)
+			fmt.Fprintf(b, " status=%s", n.Status)
 		}
 		if n.Note != "" {
-			fmt.Fprintf(&b, " note=%s", quote(n.Note))
+			fmt.Fprintf(b, " note=%s", quote(n.Note))
 		}
 		b.WriteByte('\n')
 	}
@@ -249,13 +303,12 @@ func (d Doc) Format() string {
 		if e.Dashed {
 			arrow = "..>"
 		}
-		fmt.Fprintf(&b, "%s %s %s", e.From, arrow, e.To)
+		fmt.Fprintf(b, "%s%s %s %s", indent, e.From, arrow, e.To)
 		if e.Label != "" {
-			fmt.Fprintf(&b, " %s", quote(e.Label))
+			fmt.Fprintf(b, " %s", quote(e.Label))
 		}
 		b.WriteByte('\n')
 	}
-	return b.String()
 }
 
 // quote writes s as a quoted string.

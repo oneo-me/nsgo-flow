@@ -9,14 +9,14 @@ open: 打开…
 save: 保存
 saveAs: 另存为…
 settings: 设置…
-undoChange: 撤销图表更改
-redoChange: 重做图表更改
+undoChange: 撤销更改
+redoChange: 重做更改
 zoomIn: 放大
 zoomOut: 缩小
 fit: 适合窗口
 leftToRight: 从左到右
 topToBottom: 从上到下
-diagramEmpty: 让助手画一个流程，或打开 .flow 文件。
+diagramEmpty: 让助手设计一个应用或画一个流程，或打开 .flow 文件。
 diagramLabel: "包含 {nodes, number} 个节点和 {edges, number} 条连线的流程图。"
 openFailed: "无法打开文件：{error}"
 saveFailed: "无法保存文件：{error}"
@@ -24,12 +24,12 @@ saved: 已保存
 assistant: 助手
 newChat: 新对话
 message: 消息
-placeholder: 描述你想绘制的流程…
+placeholder: 描述你想设计的应用或流程…
 send: 发送
 stop: 停止
 jumpToLatest: 跳到最新消息
-emptyTitle: 一起来画流程图
-emptyDetail: 描述一个流程，助手会询问所需的细节，并在左侧画出来。
+emptyTitle: 一起来设计应用
+emptyDetail: 描述一个应用或流程，助手会询问所需的细节，并在左侧画出它的界面和流程。
 noProvider: 配置一个 OpenAI 兼容的提供商后即可开始对话。
 openSettings: 打开设置
 worked: "用时 {seconds, number} 秒"
@@ -39,7 +39,6 @@ thinking: 思考
 stopped: 已停止
 failed: 出错了。
 retry: 重试
-toolGetFlow: 读取图表
 toolAddNodes: 添加节点
 toolUpdateNode: 修改节点
 toolRemoveNodes: 删除节点
@@ -47,7 +46,6 @@ toolAddEdges: 连线
 toolRemoveEdges: 删除连线
 toolSetLayout: 布局
 toolReplaceFlow: 重绘图表
-toolFocus: 定位节点
 toolListDir: 列出文件夹
 toolReadFile: 读取文件
 toolGlob: 查找文件
@@ -75,3 +73,19 @@ statusSkipped: 已跳过
 statsSection: 统计
 statsSend: 发送使用统计
 statsDetail: 发送应用的使用次数和时长，不含流程图、消息或个人信息，帮助改进 Flow Editor。
+toolGetProject: 读取项目
+toolAddScreen: 添加界面
+toolSetUI: 绘制界面
+toolRemoveScreen: 删除界面
+toolAddFlow: 添加流程
+toolRemoveFlow: 删除流程
+toolReplaceProject: 重绘项目
+toolShow: 定位
+screens: 界面
+screenCount: "{count, number} 个界面"
+screensEmpty: 助手设计的界面会出现在这里。
+flows: 流程
+flowCount: "{count, plural, =0 {无流程} other {# 个流程}}"
+flowEmpty: 让助手为这个界面画一个流程。
+design: 设计
+designEmpty: 这个界面还没有设计，让助手画一个吧。

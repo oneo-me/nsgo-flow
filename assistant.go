@@ -172,7 +172,7 @@ func (a *assistant) run(p agent.Provider, prompt string) {
 	go func() {
 		added, err := agent.Run(ctx, p, history, tools, agent.Hooks{
 			Prompt: func() string {
-				return onUI(func() string { return agent.SystemPrompt(a.e.doc.GetUntracked(), a.e.selected.GetUntracked(), name) })
+				return onUI(func() string { return agent.SystemPrompt(a.e.doc.GetUntracked(), a.e.at(), name) })
 			},
 			Delta: func(d agent.Delta) {
 				live(func() {
@@ -210,14 +210,12 @@ func (a *assistant) run(p agent.Provider, prompt string) {
 
 // call runs a tool on the document and marks it done in the transcript.
 func (a *assistant) call(t *turn, c agent.ToolCall) string {
-	r := agent.Apply(a.e.doc.GetUntracked(), c.Function.Name, c.Function.Arguments)
+	r := agent.Apply(a.e.doc.GetUntracked(), a.e.at(), c.Function.Name, c.Function.Arguments)
 	if r.Changed {
-		a.e.change(r.Doc, t.id)
+		a.e.change(r.Project, t.id)
 	}
-	if r.Focus != "" {
-		a.e.selected.Set(r.Focus)
-		id := r.Focus
-		a.cx.Post(func() { a.e.camera.Reveal(id) })
+	if r.Show.Screen != "" {
+		a.e.show(r.Show)
 	}
 	a.done(t, c.ID, r.Output, r.Failed)
 	return r.Output
@@ -335,8 +333,18 @@ func (a *assistant) retry(t *turn) {
 // toolLook is how the transcript names a tool.
 func toolLook(tr locales.Messages, name string) (func() *core.SVG, string) {
 	switch name {
-	case agent.ToolGetFlow:
-		return lucide.FileText, tr.ToolGetFlow()
+	case agent.ToolGetProject:
+		return lucide.FileText, tr.ToolGetProject()
+	case agent.ToolAddScreen:
+		return lucide.SquarePlus, tr.ToolAddScreen()
+	case agent.ToolSetUI:
+		return lucide.PanelsTopLeft, tr.ToolSetUI()
+	case agent.ToolRemoveScreen:
+		return lucide.SquareMinus, tr.ToolRemoveScreen()
+	case agent.ToolAddFlow:
+		return lucide.GitBranchPlus, tr.ToolAddFlow()
+	case agent.ToolRemoveFlow:
+		return lucide.Trash, tr.ToolRemoveFlow()
 	case agent.ToolAddNodes:
 		return lucide.Plus, tr.ToolAddNodes()
 	case agent.ToolUpdateNode:
@@ -351,8 +359,10 @@ func toolLook(tr locales.Messages, name string) (func() *core.SVG, string) {
 		return lucide.LayoutGrid, tr.ToolSetLayout()
 	case agent.ToolReplaceFlow:
 		return lucide.Workflow, tr.ToolReplaceFlow()
-	case agent.ToolFocus:
-		return lucide.Crosshair, tr.ToolFocus()
+	case agent.ToolReplaceProject:
+		return lucide.LayoutTemplate, tr.ToolReplaceProject()
+	case agent.ToolShow:
+		return lucide.Crosshair, tr.ToolShow()
 	case agent.ToolListDir:
 		return lucide.FolderOpen, tr.ToolListDir()
 	case agent.ToolReadFile:
@@ -369,6 +379,7 @@ func toolLook(tr locales.Messages, name string) (func() *core.SVG, string) {
 func callDetail(name, arguments string) string {
 	var a struct {
 		ID, Title, Direction, Text string
+		Screen, Flow, Node         string
 		Path, Pattern              string
 		Nodes                      []struct{ ID, Label string }
 		IDs                        []string
@@ -391,8 +402,14 @@ func callDetail(name, arguments string) string {
 		}
 	case agent.ToolSetLayout:
 		parts = slices.DeleteFunc([]string{a.Title, a.Direction}, func(s string) bool { return s == "" })
-	case agent.ToolReplaceFlow:
+	case agent.ToolReplaceFlow, agent.ToolReplaceProject:
 		return fmt.Sprintf("%d lines", strings.Count(strings.TrimSpace(a.Text), "\n")+1)
+	case agent.ToolAddScreen, agent.ToolAddFlow:
+		return cmp(a.Title, a.ID)
+	case agent.ToolSetUI:
+		return a.Screen
+	case agent.ToolShow:
+		parts = slices.DeleteFunc([]string{a.Screen, a.Flow, a.Node}, func(s string) bool { return s == "" })
 	case agent.ToolListDir, agent.ToolReadFile:
 		return cmp(a.Path, ".")
 	case agent.ToolGlob, agent.ToolGrep:
