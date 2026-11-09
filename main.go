@@ -40,6 +40,7 @@ func Root(cx *core.Scope) core.Node {
 	a := newAssistant(cx, e, func() { settingsOpen.Set(true) })
 	// A conversation is about the document it began on.
 	e.opened = a.clear
+	reportUsage(cx, e, a)
 	if startPath != "" {
 		if err := e.openPath(startPath); err != nil {
 			toasts.Show(ui.ToastContent{Type: ui.ToastError, Title: tr.OpenFailed(err.Error())})

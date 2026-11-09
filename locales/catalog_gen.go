@@ -124,6 +124,9 @@ const (
 	textStatusDone
 	textStatusBlocked
 	textStatusSkipped
+	textStatsSection
+	textStatsSend
+	textStatsDetail
 	numTexts
 )
 
@@ -190,6 +193,9 @@ var keyOfText = [numTexts]string{
 	"statusDone",
 	"statusBlocked",
 	"statusSkipped",
+	"statsSection",
+	"statsSend",
+	"statsDetail",
 }
 
 // textsEn are the messages without arguments in en.
@@ -253,7 +259,10 @@ var textsEn = i18n.NewTexts(""+
 	"In progress"+
 	"Done"+
 	"Blocked"+
-	"Skipped",
+	"Skipped"+
+	"Statistics"+
+	"Send usage statistics"+
+	"Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor.",
 	[]uint16{
 		11,
 		8,
@@ -315,6 +324,9 @@ var textsEn = i18n.NewTexts(""+
 		4,
 		7,
 		7,
+		10,
+		21,
+		117,
 	})
 
 // textsZhHans are the messages without arguments in zh-Hans.
@@ -378,7 +390,10 @@ var textsZhHans = i18n.NewTexts(""+
 	"进行中"+
 	"已完成"+
 	"受阻"+
-	"已跳过",
+	"已跳过"+
+	"统计"+
+	"发送使用统计"+
+	"发送应用的使用次数和时长，不含流程图、消息或个人信息，帮助改进 Flow Editor。",
 	[]uint16{
 		15,
 		9,
@@ -440,6 +455,9 @@ var textsZhHans = i18n.NewTexts(""+
 		9,
 		6,
 		9,
+		6,
+		18,
+		108,
 	})
 
 // texts returns the messages without arguments in lang, nil for a
@@ -1113,3 +1131,24 @@ func StatusSkipped(cx *core.Scope) string { return For(cx).StatusSkipped() }
 
 // StatusSkipped is the package's StatusSkipped in the language of msgs.
 func (msgs Messages) StatusSkipped() string { return msgs.text(textStatusSkipped) }
+
+// StatsSection says "Statistics"
+// in the language the app shows under cx.
+func StatsSection(cx *core.Scope) string { return For(cx).StatsSection() }
+
+// StatsSection is the package's StatsSection in the language of msgs.
+func (msgs Messages) StatsSection() string { return msgs.text(textStatsSection) }
+
+// StatsSend says "Send usage statistics"
+// in the language the app shows under cx.
+func StatsSend(cx *core.Scope) string { return For(cx).StatsSend() }
+
+// StatsSend is the package's StatsSend in the language of msgs.
+func (msgs Messages) StatsSend() string { return msgs.text(textStatsSend) }
+
+// StatsDetail says "Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor."
+// in the language the app shows under cx.
+func StatsDetail(cx *core.Scope) string { return For(cx).StatsDetail() }
+
+// StatsDetail is the package's StatsDetail in the language of msgs.
+func (msgs Messages) StatsDetail() string { return msgs.text(textStatsDetail) }

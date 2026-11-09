@@ -1,29 +1,75 @@
-# Flow Editor
+<p align="center">
+  <img src="assets/Icon.png" alt="Flow Editor" width="128">
+</p>
 
-A flow chart editor where you design the chart by talking with an AI. Open a `.flow` file, see it as a diagram on the left, and discuss the process with an assistant on the right, which draws on the chart with tools as you agree.
+<h1 align="center">Flow Editor</h1>
 
-## Use
+<p align="center">
+  <strong>English</strong> |
+  <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/oneo-me"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-oneo--me-181717?logo=github&logoColor=white"></a>
+  <a href="https://oneo.me"><img alt="Blog" src="https://img.shields.io/badge/Blog-oneo.me-0969da"></a>
+  <a href="https://x.com/oneo666"><img alt="X" src="https://img.shields.io/badge/X-%40oneo666-000000?logo=x&logoColor=white"></a>
+  <a href="https://github.com/sponsors/oneo-me"><img alt="GitHub Sponsors" src="https://img.shields.io/badge/GitHub%20Sponsors-ea4aaa?logo=githubsponsors&logoColor=white"></a>
+</p>
+
+<p align="center">
+  A desktop flow chart editor where you design the chart by talking with an AI assistant that draws it as you agree.
+</p>
+
+<p align="center">
+  <img src="assets/Preview.png" alt="Flow Editor">
+</p>
+
+## Features
+
+- Chart on the left, conversation on the right, in one window.
+- The assistant asks what it needs, then adds, links and rearranges nodes with tools.
+- Each assistant change undoes as one step.
+- Works with any OpenAI-compatible provider that supports tool calls, local servers included.
+- Charts are plain-text `.flow` files you can read, diff and edit by hand.
+- Runs on macOS, Windows and Linux, in English and Simplified Chinese.
+
+## Run
+
+Flow Editor needs [Go](https://go.dev/dl/). From the repository root:
 
 ```sh
 go tool nsgo dev            # run
 go tool nsgo build          # build macOS, Windows and Linux into dist/
 ```
 
-Open **Settings** (⌘,) and enter an OpenAI-compatible provider: its base URL (such as `https://api.openai.com/v1`), API key and a model that supports tool calls. A flow file given on the command line opens at start.
+A flow file given on the command line opens at start.
 
-## Flow files
+## Getting started
 
+1. Open **Settings** (⌘,) and enter a provider's base URL, such as `https://api.openai.com/v1`, an API key and a model that supports tool calls.
+2. Describe a process in the assistant, such as "Chart how we handle an order".
+3. Answer its questions and watch it draw the chart on the left.
+4. Save the chart as a `.flow` file, or open `examples/order.flow` to start from an example.
+
+The [`flowfile` package comment](flowfile/) describes the file format.
+
+## Usage statistics
+
+Release builds send anonymous usage statistics to Umami: how often and how long the app is used, under a random install ID. No chart, message, file path or API key is sent. Turn them off under **Settings** → **Statistics**. Builds of `nsgo dev` and tests send nothing.
+
+## Development
+
+From the repository root:
+
+```sh
+go tool nsgo check          # vet, catalogs and generated files
+go tool nsgo test           # tests, headless against a fake model
 ```
-title "Order handling"
-direction down                  # or right
 
-node start "Order placed" kind=start
-node check "Check stock" kind=decision note="Reserve every item"
-node pay "Charge card" status=doing
+Read [ARCHITECTURE.md](ARCHITECTURE.md) for the design and [AGENTS.md](AGENTS.md) for the rules contributors follow.
 
-start -> check
-check -> pay "in stock"
-check ..> start "retry"         # dashed edge
-```
+See [CHANGELOG.md](CHANGELOG.md) for changes.
 
-Kinds: `task`, `start`, `end`, `decision`, `data`, `note`. Statuses: `todo`, `doing`, `done`, `blocked`, `skipped`. An edge may name undeclared nodes. Saving writes the canonical form without comments. See `examples/order.flow`.
+## License
+
+Flow Editor is released under the [MIT License](LICENSE). Contributions are accepted under the same license.

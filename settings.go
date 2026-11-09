@@ -31,7 +31,15 @@ func provider(cx *core.Scope) agent.Provider {
 	return agent.Provider{BaseURL: url, APIKey: key, Model: model}
 }
 
-// settingsDialog edits the provider, saving each field as it is typed.
+// statsSwitch turns the usage statistics on or off.
+func statsSwitch(cx *core.Scope) core.Node {
+	on := core.NewSignal(cx, statsOn(cx))
+	return ui.Switch{Checked: on.Get, OnChange: func(v bool) { on.Set(v); setStatsOn(cx, v) },
+		Label: locales.For(cx).StatsSend()}
+}
+
+// settingsDialog edits the provider, saving each field as it is typed,
+// and turns the usage statistics on or off.
 func settingsDialog(cx *core.Scope, open *core.Signal[bool]) core.Node {
 	tr := locales.For(cx)
 	colors := ui.ColorsOf(cx)
@@ -60,6 +68,16 @@ func settingsDialog(cx *core.Scope, open *core.Signal[bool]) core.Node {
 			field(tr.BaseURL(), tr.BaseURLHint(), keyBaseURL, defaultBaseURL, defaultBaseURL, false, "base-url"),
 			field(tr.ApiKey(), tr.ApiKeyHint(), keyAPIKey, "", "sk-…", true, "api-key"),
 			field(tr.Model(), tr.ModelHint(), keyModel, "", "gpt-4.1", false, "model"),
+			core.View{Style: core.Style{Gap: 4}, Children: []core.Node{
+				ui.Text(tr.StatsSection(), 15, ui.Semibold, colors.Text),
+				core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 12}, Children: []core.Node{
+					core.View{Style: core.Style{FlexGrow: 1, FlexShrink: 1, Gap: 2}, Children: []core.Node{
+						ui.Text(tr.StatsSend(), 13, ui.Medium, colors.Text),
+						core.Text{Content: tr.StatsDetail(), Style: ui.TypeCaption, StyleFunc: ui.Colored(colors.Muted)},
+					}},
+					statsSwitch(cx),
+				}},
+			}},
 		},
 		Footer: []core.Node{ui.Button{Text: tr.Done(), TestID: "settings-done", OnPress: func() { open.Set(false) }}}}
 }

@@ -66,3 +66,6 @@ statusDoing: In progress
 statusDone: Done
 statusBlocked: Blocked
 statusSkipped: Skipped
+statsSection: Statistics
+statsSend: Send usage statistics
+statsDetail: Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor.

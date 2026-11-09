@@ -64,3 +64,6 @@ statusDoing: 进行中
 statusDone: 已完成
 statusBlocked: 受阻
 statusSkipped: 已跳过
+statsSection: 统计
+statsSend: 发送使用统计
+statsDetail: 发送应用的使用次数和时长，不含流程图、消息或个人信息，帮助改进 Flow Editor。

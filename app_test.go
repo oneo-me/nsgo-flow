@@ -100,3 +100,17 @@ func TestOpensAFlowFile(t *testing.T) {
 		t.Fatalf("title %q", got)
 	}
 }
+
+func TestSettingsTurnOffTheStatistics(t *testing.T) {
+	app := nsgotest.Start(t, Root, nsgotest.Size(1280, 800))
+	app.Press("label:Open Settings")
+	app.WaitFor("id:settings", time.Second)
+	app.Press("id:settings >> label:Send usage statistics")
+	if v, _ := app.Storage().GetItem(keyStats); v != "off" {
+		t.Fatalf("stats = %q, want off", v)
+	}
+	app.Press("id:settings >> label:Send usage statistics")
+	if _, ok := app.Storage().GetItem(keyStats); ok {
+		t.Fatal("stats still stored after turning them back on")
+	}
+}
