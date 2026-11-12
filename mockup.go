@@ -4,10 +4,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oneo-me/nsgo/base"
-	"github.com/oneo-me/nsgo/core"
-	"github.com/oneo-me/nsgo/icons/lucide"
-	"github.com/oneo-me/nsgo/ui"
+	"github.com/nsgo-dev/nsgo/base"
+	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/icons/lucide"
+	"github.com/nsgo-dev/nsgo/ui"
 
 	"github.com/oneo-me/nsgo-flow/flowfile"
 )
@@ -220,7 +220,7 @@ func element(cx *core.Scope, el flowfile.Element, inRow bool) core.Node {
 			in.Multiline = true
 		}
 		if icon == nil {
-			return labeled(ui.Input{Input: in})
+			return labeled(ui.Input(in))
 		}
 		in.Style = core.Style{FlexGrow: 1, Height: core.Pt(ui.ButtonHeight - 2), Padding: core.Symmetric(0, 2)}
 		return labeled(core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 4, Padding: core.Edges{Left: 9, Right: 4},

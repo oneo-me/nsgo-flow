@@ -3,9 +3,9 @@ package main
 import (
 	"slices"
 
-	"github.com/oneo-me/nsgo/core"
-	"github.com/oneo-me/nsgo/icons/lucide"
-	"github.com/oneo-me/nsgo/ui"
+	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/icons/lucide"
+	"github.com/nsgo-dev/nsgo/ui"
 
 	"github.com/oneo-me/nsgo-flow/agent"
 	"github.com/oneo-me/nsgo-flow/flowfile"

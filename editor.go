@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/oneo-me/nsgo/base"
-	"github.com/oneo-me/nsgo/core"
-	"github.com/oneo-me/nsgo/ui"
-	uiflow "github.com/oneo-me/nsgo/ui/flow"
+	"github.com/nsgo-dev/nsgo/base"
+	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/ui"
+	uiflow "github.com/nsgo-dev/nsgo/ui/flow"
 
 	"github.com/oneo-me/nsgo-flow/agent"
 	"github.com/oneo-me/nsgo-flow/flowfile"

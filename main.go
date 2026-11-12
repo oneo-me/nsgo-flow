@@ -4,11 +4,11 @@
 package main
 
 import (
-	"github.com/oneo-me/nsgo"
-	"github.com/oneo-me/nsgo/base"
-	"github.com/oneo-me/nsgo/core"
-	"github.com/oneo-me/nsgo/desktop"
-	"github.com/oneo-me/nsgo/ui"
+	"github.com/nsgo-dev/nsgo"
+	"github.com/nsgo-dev/nsgo/base"
+	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/desktop"
+	"github.com/nsgo-dev/nsgo/ui"
 
 	"github.com/oneo-me/nsgo-flow/locales"
 )
@@ -23,7 +23,6 @@ var shown *editor
 // Root is the app's window: the screens beside the open one, beside the
 // assistant.
 func Root(cx *core.Scope) core.Node {
-	cx.SetTheme(ui.DefaultTheme())
 	tr := locales.For(cx)
 	colors := ui.ColorsOf(cx)
 	toasts := ui.NewToaster(cx)

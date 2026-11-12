@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/oneo-me/nsgo/base"
-	"github.com/oneo-me/nsgo/core"
-	"github.com/oneo-me/nsgo/ui"
+	"github.com/nsgo-dev/nsgo/base"
+	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/ui"
 
 	"github.com/oneo-me/nsgo-flow/agent"
 	"github.com/oneo-me/nsgo-flow/locales"
@@ -68,8 +68,8 @@ func settingsDialog(cx *core.Scope, open *core.Signal[bool]) core.Node {
 		}
 		return core.View{Style: core.Style{Gap: 6}, Children: []core.Node{
 			ui.Text(title, 13, ui.Medium, colors.Text),
-			ui.Input{Input: base.Input{Value: value, OnChange: func(s string) { st.SetItem(key, s) }, Placeholder: placeholder,
-				Masked: masked, NoAutoCorrect: true, AutoCapitalize: core.AutoCapitalizeNone, Label: title, TestID: testID}},
+			ui.Input{Value: value, OnChange: func(s string) { st.SetItem(key, s) }, Placeholder: placeholder,
+				Masked: masked, NoAutoCorrect: true, AutoCapitalize: core.AutoCapitalizeNone, Label: title, TestID: testID},
 			core.Text{Content: hint, Style: ui.TypeCaption, StyleFunc: ui.Colored(colors.Muted)},
 		}}
 	}

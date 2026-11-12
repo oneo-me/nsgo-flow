@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/oneo-me/nsgo/core"
-	"github.com/oneo-me/nsgo/icons/lucide"
-	"github.com/oneo-me/nsgo/ui"
-	uiflow "github.com/oneo-me/nsgo/ui/flow"
+	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/icons/lucide"
+	"github.com/nsgo-dev/nsgo/ui"
+	uiflow "github.com/nsgo-dev/nsgo/ui/flow"
 
 	"github.com/oneo-me/nsgo-flow/flowfile"
 	"github.com/oneo-me/nsgo-flow/locales"

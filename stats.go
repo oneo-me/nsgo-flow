@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oneo-me/nsgo/core"
+	"github.com/nsgo-dev/nsgo/core"
 )
 
 // The app counts its use in Umami under a site of its own, as NSGo's

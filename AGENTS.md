@@ -1,6 +1,6 @@
 # Flow Editor
 
-A desktop app and flow designer built on [NSGo](https://github.com/oneo-me/nsgo): a flow file's screens and their flow charts on the left, an AI assistant that draws them on the right. Read [ARCHITECTURE.md](ARCHITECTURE.md) before coding.
+A desktop app and flow designer built on [NSGo](https://github.com/nsgo-dev/nsgo): a flow file's screens and their flow charts on the left, an AI assistant that draws them on the right. Read [ARCHITECTURE.md](ARCHITECTURE.md) before coding.
 
 ## Principles
 
@@ -11,7 +11,7 @@ A desktop app and flow designer built on [NSGo](https://github.com/oneo-me/nsgo)
 ## Verification
 
 - Run `go tool nsgo check` and `go tool nsgo test`, never `go vet`, `go test` or `go build` directly.
-- Do not run `go mod tidy`: it drops the requirements `nsgo check` needs for TSX type generation. Update NSGo with `go get github.com/oneo-me/nsgo@<version>`.
+- Do not run `go mod tidy`: it drops the requirements `nsgo check` needs for TSX type generation. Update NSGo with `go get github.com/nsgo-dev/nsgo@<version>`.
 
 ## Documentation
 

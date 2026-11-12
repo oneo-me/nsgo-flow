@@ -1,6 +1,6 @@
 # Flow Editor architecture
 
-Flow Editor is a single-window [NSGo](https://github.com/oneo-me/nsgo) desktop app. The editor holds one document, an app's screens each with a design and its flow charts, with its undo history; the sidebar, design and diagram draw it, and the assistant runs a model conversation whose tool calls edit that document.
+Flow Editor is a single-window [NSGo](https://github.com/nsgo-dev/nsgo) desktop app. The editor holds one document, an app's screens each with a design and its flow charts, with its undo history; the sidebar, design and diagram draw it, and the assistant runs a model conversation whose tool calls edit that document.
 
 ## Code map
 
