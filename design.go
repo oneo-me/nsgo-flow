@@ -28,9 +28,12 @@ const (
 // out at its device's size on a plane that the camera moves and scales,
 // fitted and centered until the user pans or zooms it.
 type designCanvas struct {
-	cx                 *core.Scope
-	x, y, zoom         *core.AnimatedValue
-	cam                struct{ x, y, zoom float64 }
+	cx         *core.Scope
+	x, y, zoom *core.AnimatedValue
+	cam        struct{ x, y, zoom float64 }
+	// zoomed is where the camera's zoom is going, for what keeps its
+	// width on screen at any zoom.
+	zoomed             *core.Signal[float64]
 	width, height      float64
 	contentW, contentH float64
 	moved              bool
@@ -42,7 +45,8 @@ type designCanvas struct {
 }
 
 func newDesignCanvas(cx *core.Scope) *designCanvas {
-	c := &designCanvas{cx: cx, x: core.NewAnimatedValue(cx, 0), y: core.NewAnimatedValue(cx, 0), zoom: core.NewAnimatedValue(cx, 1)}
+	c := &designCanvas{cx: cx, x: core.NewAnimatedValue(cx, 0), y: core.NewAnimatedValue(cx, 0), zoom: core.NewAnimatedValue(cx, 1),
+		zoomed: core.NewSignal(cx, 1.0)}
 	c.cam.zoom = 1
 	return c
 }
@@ -50,6 +54,7 @@ func newDesignCanvas(cx *core.Scope) *designCanvas {
 // move sends the camera to x, y and zoom, at once or easing there.
 func (c *designCanvas) move(x, y, zoom float64, animated bool) {
 	c.cam.x, c.cam.y, c.cam.zoom = x, y, zoom
+	c.zoomed.Set(zoom)
 	if c.run != nil {
 		c.run.Stop()
 	}
@@ -82,6 +87,11 @@ func (c *designCanvas) zoomAt(x, y, factor float64, animated bool) {
 }
 
 func (c *designCanvas) zoomBy(factor float64) { c.zoomAt(c.width/2, c.height/2, factor, true) }
+
+// toDesign is the point of the design under a point of the view.
+func (c *designCanvas) toDesign(p core.Point) core.Point {
+	return core.Point{X: core.Points((float64(p.X) - c.cam.x) / c.cam.zoom), Y: core.Points((float64(p.Y) - c.cam.y) / c.cam.zoom)}
+}
 
 // resize keeps a design the user has not moved fitted, and otherwise
 // keeps the view's center where it is.
@@ -135,7 +145,10 @@ func (c *designCanvas) wheel(e core.WheelEvent) {
 }
 
 // designPane is the open screen's design on the canvas, with its zoom
-// tools. Pressing an element selects it, and pressing around it clears
+// tools. A layer over the design takes the pointer and finds the element
+// under it itself, as the camera's transform moves the design where the
+// platforms' hit testing does not follow: an outline marks the element
+// the pointer is over, pressing selects it, and pressing around it clears
 // the selection.
 func designPane(cx *core.Scope, e *editor) core.Node {
 	tr := locales.For(cx)
@@ -152,16 +165,57 @@ func designPane(cx *core.Scope, e *editor) core.Node {
 		screen.Get()
 		cx.Post(func() { c.fit(false) })
 	})
+	hovered := core.NewSignal(cx, "")
 	sel := selection{
 		selected: func() string { return e.cur().element.Get() },
 		choose: func(path string) {
 			d := e.shown()
 			d.element.Set(path)
 		},
+		frames:  map[string]core.Bounds{},
+		laidOut: core.NewSignal(cx, 0),
 	}
+	// mark outlines the element at path, its line width points on screen
+	// at any zoom.
+	mark := func(path func() string, width float64, testID string) core.Node {
+		return core.View{TestID: testID, PointerEvents: core.PointerEventsNone,
+			StyleFunc: func() core.Style {
+				sel.laidOut.Get()
+				b, ok := sel.bounds(path())
+				if !ok {
+					return core.Style{Display: core.DisplayNone}
+				}
+				w := core.Points(width / c.zoomed.Get())
+				return core.Style{Position: core.Absolute, Left: core.Pt(b.Origin.X - w), Top: core.Pt(b.Origin.Y - w),
+					Width: core.Pt(b.Size.Width + 2*w), Height: core.Pt(b.Size.Height + 2*w), BorderWidth: w, BorderColor: colors.Accent()}
+			}}
+	}
+	selected := mark(sel.selected, 2, "design-selected")
+	hover := mark(func() string {
+		if p := hovered.Get(); p != sel.selected() {
+			return p
+		}
+		return ""
+	}, 1, "design-hovered")
+	elementAt := func(p core.Point) string {
+		s, _ := e.cur().openScreen()
+		w, h := deviceSize(s.Device)
+		at := c.toDesign(p)
+		if at.X < 0 || at.Y < 0 || at.X >= core.Points(w) || at.Y >= core.Points(h) {
+			return ""
+		}
+		return sel.elementAt(s.UI, nil, core.Point{}, at)
+	}
+	// A changed design is laid out afresh, the pointer over nothing until
+	// it moves.
+	cx.Effect(func() {
+		look.Get()
+		hovered.Set("")
+	})
 	picture := core.Dynamic(func(cx *core.Scope) core.Node {
 		look.Get()
 		s := core.Untracked(cx, func() flowfile.Screen { s, _ := e.cur().openScreen(); return s })
+		clear(sel.frames)
 		if len(s.UI) == 0 {
 			return core.View{Style: core.Style{Position: core.Absolute, Left: core.Pt(0), Top: core.Pt(0), Right: core.Pt(0), Bottom: core.Pt(0),
 				AlignItems: core.AlignCenter, JustifyContent: core.JustifyCenter, Gap: 10}, Children: []core.Node{
@@ -173,7 +227,7 @@ func designPane(cx *core.Scope, e *editor) core.Node {
 			TransformOrigin: core.ObjectPosition{X: core.PositionAxis{Offset: core.Pt(0)}, Y: core.PositionAxis{Offset: core.Pt(0)}},
 			Animated:        &core.AnimatedStyle{TranslateX: c.x, TranslateY: c.y, Scale: c.zoom}},
 			OnLayout: c.measured,
-			Children: []core.Node{screenView(cx, s, sel)}}
+			Children: []core.Node{screenView(cx, s, sel), hover, selected}}
 	})
 	tool := func(icon func() *core.SVG, label string, press func(), testID string) core.Node {
 		return ui.IconButton{Icon: icon, Label: label, OnPress: press, TestID: testID}
@@ -188,10 +242,18 @@ func designPane(cx *core.Scope, e *editor) core.Node {
 			tool(lucide.ZoomIn, tr.ZoomIn(), func() { c.zoomBy(designZoomStep) }, "design-zoom-in"),
 			tool(lucide.Scan, tr.Fit(), func() { c.fit(true) }, "design-fit"),
 		}}
-	return core.View{Style: ui.FillRest.Merge(core.Style{Overflow: core.Hidden}), StyleFunc: ui.Filled(colors.Inset), NoFocus: true,
-		OnLayout: c.resize,
-		OnPress:  func(core.PressEvent) { sel.choose("") },
-		OnWheel:  c.wheel,
+	pointer := core.View{TestID: "design-pointer", NoFocus: true, ImportantForAccessibility: core.ImportantNo,
+		Style:   core.Style{Position: core.Absolute, Left: core.Pt(0), Top: core.Pt(0), Right: core.Pt(0), Bottom: core.Pt(0)},
+		OnPress: func(ev core.PressEvent) { sel.choose(elementAt(ev.Position)) },
+		OnMouseMove: func(ev core.MouseEvent) {
+			path := ""
+			if ev.PressedButton == core.MouseButtonNone {
+				path = elementAt(ev.Position)
+			}
+			hovered.Set(path)
+		},
+		OnMouseLeave: func(core.MouseEvent) { hovered.Set("") },
+		OnWheel:      c.wheel,
 		OnPan: func(ev core.PanEvent) {
 			switch ev.Phase {
 			case core.GestureBegan:
@@ -212,5 +274,8 @@ func designPane(cx *core.Scope, e *editor) core.Node {
 				}
 			}
 		},
-		Children: []core.Node{picture, toolbar}}
+	}
+	return core.View{Style: ui.FillRest.Merge(core.Style{Overflow: core.Hidden}), StyleFunc: ui.Filled(colors.Inset), NoFocus: true,
+		OnLayout: c.resize,
+		Children: []core.Node{picture, pointer, toolbar}}
 }

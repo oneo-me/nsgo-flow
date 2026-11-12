@@ -165,6 +165,59 @@ func TestOpensFlowFilesInTabs(t *testing.T) {
 	again.Find("design >> text:Welcome")
 }
 
+func TestDesignSelectsWhatThePointerIsOver(t *testing.T) {
+	shop := writeFlow(t, "shop.flow", "screen home \"Home\"\n"+
+		"  box class=\"flex-1 gap-4 p-6\"\n"+
+		"    text \"Welcome\" class=\"text-2xl\"\n"+
+		"    box class=\"flex-row gap-2 p-2\"\n"+
+		"      icon mail class=\"size-5\"\n"+
+		"      text \"Mail\"\n"+
+		"    end\n"+
+		"  end\n")
+	app, e := startEditor(t)
+	app.Post(func() {
+		if err := e.openPath(shop); err != nil {
+			t.Error(err)
+		}
+	})
+	app.WaitFor("design >> text:Mail", time.Second)
+	// The design fits the pane scaled down, which the layer over it
+	// undoes: the pointer is where the camera drew each element.
+	pane, design := app.Find("id:design-pointer").Frame.Size, app.Find("id:design").Frame.Size
+	zoom := min(1, (pane.Width-2*designFitMargin)/design.Width, (pane.Height-2*designFitMargin)/design.Height)
+	if zoom >= 1 {
+		t.Fatalf("the design shows unscaled at %v in %v", design, pane)
+	}
+	at := func(path string) core.Point {
+		v := app.Find("id:element-" + path)
+		x, y := v.Frame.Size.Width/2, v.Frame.Size.Height/2
+		for ; v.Props.TestID != "design"; v = v.Parent {
+			x, y = x+v.Frame.Origin.X, y+v.Frame.Origin.Y
+		}
+		return core.Point{X: (pane.Width-design.Width*zoom)/2 + x*zoom, Y: (pane.Height-design.Height*zoom)/2 + y*zoom}
+	}
+	app.HoverAt("id:design-pointer", at("0.1.0"))
+	app.WaitFor("id:design-hovered", time.Second)
+	app.PressAt("id:design-pointer", at("0.1.0"))
+	if got := e.cur().element.GetUntracked(); got != "0.1.0" {
+		t.Fatalf("pressing the icon selected %q", got)
+	}
+	app.WaitFor("id:design-selected", time.Second)
+	app.HoverAt("id:design-pointer", at("0.0"))
+	app.PressAt("id:design-pointer", at("0.0"))
+	if got := e.cur().element.GetUntracked(); got != "0.0" {
+		t.Fatalf("pressing the title selected %q", got)
+	}
+	app.HoverOut()
+	if app.Exists("id:design-hovered") {
+		t.Fatal("the outline stayed after the pointer left")
+	}
+	app.PressAt("id:design-pointer", core.Point{X: 4, Y: 4})
+	if got := e.cur().element.GetUntracked(); got != "" {
+		t.Fatalf("pressing around the design left %q selected", got)
+	}
+}
+
 func TestSavesWhereTheFileWasSaved(t *testing.T) {
 	app, e := startEditor(t)
 	// A new file is saved where the user chooses before it opens.
