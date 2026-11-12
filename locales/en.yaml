@@ -10,6 +10,8 @@ newFlow: New Flow
 open: Open…
 save: Save
 saveAs: Save As…
+closeTab: Close Tab
+noFiles: Make a flow file, or open one, to design an app or chart a flow.
 settings: Settings…
 undoChange: Undo Change
 redoChange: Redo Change
@@ -18,7 +20,7 @@ zoomOut: Zoom Out
 fit: Fit to Window
 leftToRight: Left to Right
 topToBottom: Top to Bottom
-diagramEmpty: Ask the assistant to design an app or draw a flow, or open a .flow file.
+diagramEmpty: Ask the assistant to design an app or draw a flow.
 diagramLabel: "Flow chart with {nodes, plural, one {# node} other {# nodes}} and {edges, plural, one {# edge} other {# edges}}."
 openFailed: "Could not open the file: {error}"
 saveFailed: "Could not save the file: {error}"
@@ -55,10 +57,6 @@ toolListDir: List folder
 toolReadFile: Read file
 toolGlob: Find files
 toolGrep: Search files
-attachFolder: Attach project folder
-changeFolder: "Change project folder {name}"
-detachFolder: Detach the project folder
-folderFailed: "Could not attach the folder: {error}"
 settingsTitle: Settings
 providerSection: Provider
 providerDescription: Any API compatible with OpenAI's chat completions, such as OpenAI, DeepSeek, OpenRouter, Ollama or LM Studio.

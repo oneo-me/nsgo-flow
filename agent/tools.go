@@ -3,7 +3,6 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 
@@ -15,6 +14,7 @@ const (
 	ToolGetProject     = "get_project"
 	ToolAddScreen      = "add_screen"
 	ToolSetUI          = "set_ui"
+	ToolSetElement     = "set_element"
 	ToolRemoveScreen   = "remove_screen"
 	ToolAddFlow        = "add_flow"
 	ToolRemoveFlow     = "remove_flow"
@@ -31,10 +31,19 @@ const (
 
 // Location is what the user sees: a screen, one of its flows, "" for
 // none, and a selected node of that flow, or the screen's design when
-// Design says.
+// Design says, and the path of a selected element of it.
 type Location struct {
 	Screen, Flow, Node string
 	Design             bool
+	Element            string
+}
+
+// Context is what the model is told of the user's files besides the
+// project: the open file's path, the folder holding it, which the
+// folder tools read, and the paths of the other open files.
+type Context struct {
+	File, Folder string
+	Others       []string
 }
 
 func object(required []string, props map[string]any) map[string]any {
@@ -78,15 +87,20 @@ func with(props map[string]any) map[string]any {
 
 // Tools are the drawing tools the model gets.
 func Tools() []Tool {
-	ui := str("The screen's interface as element lines, one element a line, such as navbar \"Sign in\" back=true; row, column and card hold the lines up to their end.")
+	ui := str("The screen's whole interface as element lines, one element a line, such as text \"Sign in\" class=\"text-2xl font-bold\"; a box holds the lines up to its end.")
 	return []Tool{
-		{ToolGetProject, "Return the current flow file's text: every screen with its interface and flows.", object(nil, map[string]any{})},
+		{ToolGetProject, "Return a flow file's text: every screen with its interface and flows. The open file's is in the prompt already; read another open file's with file.",
+			object(nil, map[string]any{"file": str("Path of another open file.")})},
 		{ToolAddScreen, "Add a screen of the app and show it, or change the title, device or interface of the screen with the same ID.",
 			object([]string{"id"}, map[string]any{"id": str("Stable short ID: letters, digits, _, - or ., such as sign_in."),
 				"title": str("The screen's name, short."), "device": enum("What the screen is drawn on; phone when a new screen omits it.", flowfile.Devices),
 				"ui": ui})},
 		{ToolSetUI, "Replace a screen's whole interface.",
 			object([]string{"ui"}, map[string]any{"screen": str("ID of the screen; the open one when omitted."), "ui": ui})},
+		{ToolSetElement, "Replace one element of a screen's interface, with what it holds, by element lines: several elements, or none to remove it. Prefer it to set_ui for changing a part, such as the selected element.",
+			object([]string{"path", "ui"}, map[string]any{"screen": str("ID of the screen; the open one when omitted."),
+				"path": str("The element's path: its index among its siblings at each level from 0, joined by dots, such as 0.2.1."),
+				"ui":   str("The element lines that take its place, \"\" to remove it.")})},
 		{ToolRemoveScreen, "Remove a screen with its interface and flows.",
 			object([]string{"id"}, map[string]any{"id": str("ID of the screen.")})},
 		{ToolAddFlow, "Add a flow chart to a screen and show it, such as what happens when a button is pressed, or retitle the flow with the same ID.",
@@ -260,6 +274,29 @@ func Apply(p flowfile.Project, at Location, name, arguments string) Result {
 		s.UI = els
 		show = Location{Screen: s.ID, Design: true}
 		return ok("screen %s has %d elements", s.ID, len(els))
+	case ToolSetElement:
+		var a struct{ Screen, Path, UI string }
+		if err := decode(&a); err != nil {
+			return fail("%v", err)
+		}
+		s, err := screen(a.Screen)
+		if err != nil {
+			return fail("%v", err)
+		}
+		with, err := flowfile.ParseUI(a.UI)
+		if err != nil {
+			return fail("ui %v", err)
+		}
+		els, err := flowfile.ReplaceElement(s.UI, a.Path, with)
+		if err != nil {
+			return fail("%v", err)
+		}
+		s.UI = els
+		show = Location{Screen: s.ID, Design: true}
+		if len(with) == 1 {
+			show.Element = a.Path
+		}
+		return ok("replaced element %s of screen %s with %d elements", a.Path, s.ID, len(with))
 	case ToolRemoveScreen:
 		var a struct{ ID string }
 		if err := decode(&a); err != nil {
@@ -497,26 +534,32 @@ func Apply(p flowfile.Project, at Location, name, arguments string) Result {
 }
 
 // SystemPrompt tells the model its job and shows it the project as it
-// is, where the user is looking, and the name of the project folder it
-// may read, "" for none.
-func SystemPrompt(p flowfile.Project, at Location, folder string) string {
+// is, where the user is looking and what is selected, and the files
+// around it.
+func SystemPrompt(p flowfile.Project, at Location, c Context) string {
 	var b strings.Builder
-	b.WriteString(`You are an app designer working inside a flow editor. The user sees a list of the app's screens on the left, the open screen in the middle with a tab for its design and one for each of its flow charts, and talks with you on the right.
+	b.WriteString(`You are an app designer working inside a flow editor. The user sees a list of the app's screens on the left, each with its design and its flow charts, the open one in the middle, and talks with you on the right.
 
-Discuss the app with the user: ask about its screens, what each shows, the steps, decisions, actors and edge cases of what happens on them when they are unclear, suggest improvements, and draw as you agree. Each screen has a design, drawn with the controls of NSGo, a desktop and mobile UI toolkit, and one or more flow charts, such as what happens when the user presses its main button. Make designs look like a finished product: use icons, sections, cards, badges, stats and the right controls rather than plain text, and fill them with realistic content. When the user only wants a flow chart, draw flows and leave the design empty. Change the project only with the tools, in small steps, and say briefly what you changed. Keep labels short and put detail in notes. Use kind=start and kind=end for entry and exit points, kind=decision for branches, with the answers as edge labels. Reuse existing IDs; never invent screens or nodes the user did not ask for without saying so. Reply in the user's language, and write the interface's texts in it too.
+Discuss the app with the user: ask about its screens, what each shows, the steps, decisions, actors and edge cases of what happens on them when they are unclear, suggest improvements, and draw as you agree. Each screen has a design, a draft of how it looks, and one or more flow charts, such as what happens when the user presses its main button. When the user only wants a flow chart, draw flows and leave the design empty. Change the project only with the tools, in small steps, and say briefly what you changed. Keep labels short and put detail in notes. Use kind=start and kind=end for entry and exit points, kind=decision for branches, with the answers as edge labels. Reuse existing IDs; never invent screens or nodes the user did not ask for without saying so. Reply in the user's language, and write the interface's texts in it too.
 
 The project is stored as a flow file:
 
 ` + "```" + `
 title "Shop"
 screen signin "Sign in"
-  navbar "Sign in" back=true
-  input "Email" placeholder="you@example.com"
-  row
-    checkbox "Remember me" checked=true
-    link "Forgot password?"
+  box class="flex-1 gap-4 bg-zinc-50 p-6 pt-16"
+    text "Welcome back" class="text-3xl font-bold text-zinc-900"
+    text "Sign in to order ahead." class="text-zinc-500"
+    box class="h-12 flex-row items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4"
+      icon mail class="size-4 text-zinc-400"
+      text "you@example.com" class="text-zinc-400"
+    end
+    box class="h-12 items-center justify-center rounded-xl bg-amber-600 shadow-md"
+      text "Sign in" class="font-semibold text-white"
+    end
+    image "Latte art seen from above" class="h-40 rounded-2xl"
+    svg "<svg viewBox='0 0 120 40'><path d='M0 32 L30 20 L60 26 L90 8 L120 14' stroke='#d97706' stroke-width='3' fill='none'/></svg>" class="h-16 w-full"
   end
-  button "Sign in" variant=primary
   flow login "Signing in"
     node start "Tap Sign in" kind=start
     node check "Check password" kind=decision note="Lock after 5 tries"
@@ -525,37 +568,23 @@ screen signin "Sign in"
     check ..> start "invalid"   # dashed edge
 ` + "```" + `
 
-Interface elements, a line each, with their attributes:
+A design is drawn with a few primitives, an element a line, each styled with Tailwind CSS 4 classes in class="…":
 `)
 	for _, spec := range flowfile.Elements {
 		fmt.Fprintf(&b, "- %s: %s", spec.Kind, spec.Doc)
-		var attrs []string
-		for _, key := range slices.Sorted(maps.Keys(spec.Attrs)) {
-			switch values := spec.Attrs[key]; {
-			case values == nil:
-				attrs = append(attrs, key+"=\"text\"")
-			case slices.Equal(values, flowfile.Number):
-				attrs = append(attrs, key+"=number")
-			default:
-				attrs = append(attrs, key+"="+strings.Join(values, "|"))
-			}
-		}
-		if spec.Items {
-			attrs = append([]string{`"label" "label" …`}, attrs...)
-		}
-		if _, ok := spec.Attrs["icon"]; ok {
-			attrs = slices.DeleteFunc(attrs, func(a string) bool { return strings.HasPrefix(a, "icon=") })
-			attrs = append(attrs, "icon=name")
-		}
-		if len(attrs) > 0 {
-			fmt.Fprintf(&b, " (%s)", strings.Join(attrs, ", "))
+		if len(spec.Attrs) > 0 {
+			fmt.Fprintf(&b, " (%s=\"…\")", strings.Join(spec.Attrs, "=\"…\", "))
 		}
 		b.WriteByte('\n')
 	}
 	b.WriteString(`
-Icon names: ` + strings.Join(flowfile.Icons, ", ") + `. A tab of tabs, segmented or tabbar names its icon after a colon, such as "Home:house".
+Element paths name an element by its index among its siblings at each level from 0, joined by dots: 1.0 is the first element the second top-level element holds.
 
-Node kinds: ` + strings.Join(flowfile.Kinds, ", ") + `. Statuses: ` + strings.Join(flowfile.Statuses, ", ") + `. Devices: ` + strings.Join(flowfile.Devices, ", ") + `.
+Draw any interface with them, as a designer draws in Figma: buttons, fields, switches, tabs, cards, lists, charts and navigation are boxes, texts, icons and SVG shaped by classes, with exactly the look the app needs. Make designs look like a finished product, with a clear hierarchy, consistent spacing and realistic content, not wireframes. Layout is flexbox: a box is a column unless flex-row, children stretch across it, flex-1 fills the rest, and absolute with top-*, left-*, right-* or bottom-* places a box over its parent, as a badge or a floating button. Classes cover sizes (w-*, h-*, size-*, w-full, w-1/2), spacing (p-*, gap-*, m-*), colors (bg-*, text-*, border-*, with /opacity such as bg-black/40, and any value as bg-[#0f172a]), the palette (zinc, slate, blue, amber, emerald, rose and the others, 50 to 950), corners (rounded-*, rounded-full), borders, shadows (shadow-sm to shadow-2xl), gradients (bg-linear-to-br from-indigo-500 to-pink-500), opacity, overflow-hidden, text (text-xs to text-6xl, font-medium, font-bold, leading-*, tracking-*, text-center, truncate, line-clamp-2, uppercase) and theme colors that follow light and dark mode (bg-background, text-foreground, bg-card, bg-primary, text-primary-foreground, bg-muted, text-muted-foreground, border-border). The screen is the device's size and clips what overflows; give the main box flex-1 to fill it, and draw the status bar, navigation bars and tab bars yourself where the app has them. set_ui replaces a screen's whole interface, so send all of it; set_element changes one part.
+
+An icon takes the name of any Lucide icon (lucide.dev), by its current name or an older one such as home or alert-circle; common ones are ` + strings.Join(flowfile.CommonIcons, ", ") + `. Draw a logo, a chart or an illustration with svg.
+
+Node kinds: ` + strings.Join(flowfile.Kinds, ", ") + `. Statuses: ` + strings.Join(flowfile.Statuses, ", ") + `. Devices: ` + strings.Join(flowfile.Devices, ", ") + ` (390 by 800, 820 by 1080 and 1200 by 760 points).
 
 The current project:
 
@@ -577,12 +606,29 @@ The current project:
 		b.WriteString("; tools that take a screen or flow use the open ones when you omit them.\n")
 	}
 	if at.Node != "" {
-		fmt.Fprintf(&b, "The user has selected node %q.\n", at.Node)
+		fmt.Fprintf(&b, "The user has selected node %q of the flow.\n", at.Node)
 	}
-	if folder != "" {
+	if i := p.ScreenIndex(at.Screen); i >= 0 && at.Design && at.Element != "" {
+		if el, ok := flowfile.ElementAt(p.Screens[i].UI, at.Element); ok {
+			fmt.Fprintf(&b, "The user has selected element %s of the design:\n\n```\n%s```\n", at.Element, flowfile.FormatUI([]flowfile.Element{el}))
+		}
+	}
+	if at.Node != "" || at.Element != "" {
+		b.WriteString("Work on what is selected when the user's request may be about it, such as \"make this bigger\".\n")
+	}
+	if c.File != "" {
+		fmt.Fprintf(&b, "\nThe project is the flow file %q.", c.File)
+	}
+	if len(c.Others) > 0 {
+		fmt.Fprintf(&b, " The user also has these flow files open, which you can read with %s when they matter: %s.", ToolGetProject, strings.Join(c.Others, ", "))
+	}
+	if c.Folder != "" {
 		fmt.Fprintf(&b, `
-The user attached the project folder %q. When the user asks about how this project works, study it before drawing: list folders, find and search files, and read the code, configuration and documents that matter, then draw what the code actually does, naming the files behind a step in its note when that helps. Paths are relative to the folder's root, and you can only read it. Read only what the question needs, and do not quote long passages back.
-`, folder)
+
+The file is in the folder %q, which you can read with the folder tools, as the app it designs may live there. When the user asks about how the app or the project works, study it before drawing: list folders, find and search files, and read the code, configuration and documents that matter, then draw what they actually do, naming the files behind a step in its note when that helps. Paths are relative to the folder, and you can only read it. Read only what the question needs, and do not quote long passages back.
+`, c.Folder)
+	} else if c.File != "" {
+		b.WriteByte('\n')
 	}
 	return b.String()
 }

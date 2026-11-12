@@ -106,12 +106,12 @@ func reportUsage(cx *core.Scope, e *editor, a *assistant) {
 	since := time.Now()
 	send("")
 	cx.Effect(func() {
-		e.doc.Get()
+		e.cur().doc.Get()
 		core.Untracked(cx, func() bool { since = time.Now(); return true })
 	})
 	turns := 0
 	cx.Effect(func() {
-		n := len(a.turns.Get())
+		n := len(a.chat().turns.Get())
 		core.Untracked(cx, func() bool {
 			if n > turns {
 				since = time.Now()

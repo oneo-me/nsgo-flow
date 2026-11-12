@@ -45,8 +45,6 @@ var Parameters = map[string][]string{
 	"Worked":       {"seconds"},
 	"Working":      {"seconds"},
 	"RanTools":     {"count"},
-	"ChangeFolder": {"name"},
-	"FolderFailed": {"error_"},
 	"ScreenCount":  {"count"},
 	"FlowCount":    {"count"},
 }
@@ -64,8 +62,6 @@ type Translation struct {
 	Worked       func(seconds int) string
 	Working      func(seconds int) string
 	RanTools     func(count int) string
-	ChangeFolder func(name string) string
-	FolderFailed func(error_ string) string
 	ScreenCount  func(count int) string
 	FlowCount    func(count int) string
 }
@@ -84,6 +80,8 @@ const (
 	textOpen
 	textSave
 	textSaveAs
+	textCloseTab
+	textNoFiles
 	textSettings
 	textUndoChange
 	textRedoChange
@@ -122,8 +120,6 @@ const (
 	textToolReadFile
 	textToolGlob
 	textToolGrep
-	textAttachFolder
-	textDetachFolder
 	textSettingsTitle
 	textProviderSection
 	textProviderDescription
@@ -173,6 +169,8 @@ var keyOfText = [numTexts]string{
 	"open",
 	"save",
 	"saveAs",
+	"closeTab",
+	"noFiles",
 	"settings",
 	"undoChange",
 	"redoChange",
@@ -211,8 +209,6 @@ var keyOfText = [numTexts]string{
 	"toolReadFile",
 	"toolGlob",
 	"toolGrep",
-	"attachFolder",
-	"detachFolder",
 	"settingsTitle",
 	"providerSection",
 	"providerDescription",
@@ -260,6 +256,8 @@ var textsEn = i18n.NewTexts(""+
 	"Open…"+
 	"Save"+
 	"Save As…"+
+	"Close Tab"+
+	"Make a flow file, or open one, to design an app or chart a flow."+
 	"Settings…"+
 	"Undo Change"+
 	"Redo Change"+
@@ -268,7 +266,7 @@ var textsEn = i18n.NewTexts(""+
 	"Fit to Window"+
 	"Left to Right"+
 	"Top to Bottom"+
-	"Ask the assistant to design an app or draw a flow, or open a .flow file."+
+	"Ask the assistant to design an app or draw a flow."+
 	"Saved"+
 	"Your changes will be lost if you don't save them."+
 	"Don't Save"+
@@ -298,8 +296,6 @@ var textsEn = i18n.NewTexts(""+
 	"Read file"+
 	"Find files"+
 	"Search files"+
-	"Attach project folder"+
-	"Detach the project folder"+
 	"Settings"+
 	"Provider"+
 	"Any API compatible with OpenAI's chat completions, such as OpenAI, DeepSeek, OpenRouter, Ollama or LM Studio."+
@@ -344,6 +340,8 @@ var textsEn = i18n.NewTexts(""+
 		7,
 		4,
 		10,
+		9,
+		64,
 		11,
 		11,
 		11,
@@ -352,7 +350,7 @@ var textsEn = i18n.NewTexts(""+
 		13,
 		13,
 		13,
-		72,
+		50,
 		5,
 		49,
 		10,
@@ -382,8 +380,6 @@ var textsEn = i18n.NewTexts(""+
 		9,
 		10,
 		12,
-		21,
-		25,
 		8,
 		8,
 		109,
@@ -431,6 +427,8 @@ var textsZhHans = i18n.NewTexts(""+
 	"打开…"+
 	"保存"+
 	"另存为…"+
+	"关闭标签页"+
+	"新建或打开一个流程文件，开始设计应用或绘制流程。"+
 	"设置…"+
 	"撤销更改"+
 	"重做更改"+
@@ -439,7 +437,7 @@ var textsZhHans = i18n.NewTexts(""+
 	"适合窗口"+
 	"从左到右"+
 	"从上到下"+
-	"让助手设计一个应用或画一个流程，或打开 .flow 文件。"+
+	"让助手设计一个应用或画一个流程。"+
 	"已保存"+
 	"如果不保存，你的更改将会丢失。"+
 	"不保存"+
@@ -469,8 +467,6 @@ var textsZhHans = i18n.NewTexts(""+
 	"读取文件"+
 	"查找文件"+
 	"搜索文件"+
-	"附加项目文件夹"+
-	"移除项目文件夹"+
 	"设置"+
 	"提供商"+
 	"任何兼容 OpenAI Chat Completions 的 API，例如 OpenAI、DeepSeek、OpenRouter、Ollama 或 LM Studio。"+
@@ -515,6 +511,8 @@ var textsZhHans = i18n.NewTexts(""+
 		9,
 		6,
 		12,
+		15,
+		72,
 		9,
 		12,
 		12,
@@ -523,7 +521,7 @@ var textsZhHans = i18n.NewTexts(""+
 		12,
 		12,
 		12,
-		73,
+		48,
 		9,
 		45,
 		9,
@@ -553,8 +551,6 @@ var textsZhHans = i18n.NewTexts(""+
 		12,
 		12,
 		12,
-		21,
-		21,
 		6,
 		9,
 		110,
@@ -665,12 +661,6 @@ func Supply(lang string, t Translation) {
 	if t.RanTools != nil {
 		s.RanTools = t.RanTools
 	}
-	if t.ChangeFolder != nil {
-		s.ChangeFolder = t.ChangeFolder
-	}
-	if t.FolderFailed != nil {
-		s.FolderFailed = t.FolderFailed
-	}
 	if t.ScreenCount != nil {
 		s.ScreenCount = t.ScreenCount
 	}
@@ -762,6 +752,20 @@ func SaveAs(cx *core.Scope) string { return For(cx).SaveAs() }
 // SaveAs is the package's SaveAs in the language of msgs.
 func (msgs Messages) SaveAs() string { return msgs.text(textSaveAs) }
 
+// CloseTab says "Close Tab"
+// in the language the app shows under cx.
+func CloseTab(cx *core.Scope) string { return For(cx).CloseTab() }
+
+// CloseTab is the package's CloseTab in the language of msgs.
+func (msgs Messages) CloseTab() string { return msgs.text(textCloseTab) }
+
+// NoFiles says "Make a flow file, or open one, to design an app or chart a flow."
+// in the language the app shows under cx.
+func NoFiles(cx *core.Scope) string { return For(cx).NoFiles() }
+
+// NoFiles is the package's NoFiles in the language of msgs.
+func (msgs Messages) NoFiles() string { return msgs.text(textNoFiles) }
+
 // Settings says "Settings…"
 // in the language the app shows under cx.
 func Settings(cx *core.Scope) string { return For(cx).Settings() }
@@ -818,7 +822,7 @@ func TopToBottom(cx *core.Scope) string { return For(cx).TopToBottom() }
 // TopToBottom is the package's TopToBottom in the language of msgs.
 func (msgs Messages) TopToBottom() string { return msgs.text(textTopToBottom) }
 
-// DiagramEmpty says "Ask the assistant to design an app or draw a flow, or open a .flow file."
+// DiagramEmpty says "Ask the assistant to design an app or draw a flow."
 // in the language the app shows under cx.
 func DiagramEmpty(cx *core.Scope) string { return For(cx).DiagramEmpty() }
 
@@ -1214,64 +1218,6 @@ func ToolGrep(cx *core.Scope) string { return For(cx).ToolGrep() }
 
 // ToolGrep is the package's ToolGrep in the language of msgs.
 func (msgs Messages) ToolGrep() string { return msgs.text(textToolGrep) }
-
-// AttachFolder says "Attach project folder"
-// in the language the app shows under cx.
-func AttachFolder(cx *core.Scope) string { return For(cx).AttachFolder() }
-
-// AttachFolder is the package's AttachFolder in the language of msgs.
-func (msgs Messages) AttachFolder() string { return msgs.text(textAttachFolder) }
-
-// ChangeFolder says "Change project folder {name}"
-// in the language the app shows under cx.
-func ChangeFolder(cx *core.Scope, name string) string { return For(cx).ChangeFolder(name) }
-
-// ChangeFolder is the package's ChangeFolder in the language of msgs.
-func (msgs Messages) ChangeFolder(name string) string {
-	if i18n.IsPseudo(msgs.lang) {
-		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.ChangeFolder(name))
-	}
-	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
-		if f := supplied[lang].ChangeFolder; f != nil {
-			return f(name)
-		}
-		switch lang {
-		case "", "en":
-			return "Change project folder " + msgs.arg(name)
-		case "zh-Hans":
-			return "更换项目文件夹 " + name
-		}
-	}
-}
-
-// DetachFolder says "Detach the project folder"
-// in the language the app shows under cx.
-func DetachFolder(cx *core.Scope) string { return For(cx).DetachFolder() }
-
-// DetachFolder is the package's DetachFolder in the language of msgs.
-func (msgs Messages) DetachFolder() string { return msgs.text(textDetachFolder) }
-
-// FolderFailed says "Could not attach the folder: {error}"
-// in the language the app shows under cx.
-func FolderFailed(cx *core.Scope, error_ string) string { return For(cx).FolderFailed(error_) }
-
-// FolderFailed is the package's FolderFailed in the language of msgs.
-func (msgs Messages) FolderFailed(error_ string) string {
-	if i18n.IsPseudo(msgs.lang) {
-		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.FolderFailed(error_))
-	}
-	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
-		if f := supplied[lang].FolderFailed; f != nil {
-			return f(error_)
-		}
-		switch lang {
-		case "", "en":
-			return "Could not attach the folder: " + msgs.arg(error_)
-		case "zh-Hans":
-			return "无法附加文件夹：" + error_
-		}
-	}
-}
 
 // SettingsTitle says "Settings"
 // in the language the app shows under cx.

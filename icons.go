@@ -1,125 +1,19 @@
 package main
 
+//go:generate go run ./tools/iconsgen
+
 import (
 	"github.com/nsgo-dev/nsgo/core"
 	"github.com/nsgo-dev/nsgo/icons/lucide"
+
+	"github.com/oneo-me/nsgo-flow/flowfile"
 )
 
-// icons are the Lucide icons a design names, by their Lucide names; an
-// icon not among them draws as a circle.
-var icons = map[string]func() *core.SVG{
-	"house":              lucide.House,
-	"search":             lucide.Search,
-	"shopping-cart":      lucide.ShoppingCart,
-	"shopping-bag":       lucide.ShoppingBag,
-	"user":               lucide.User,
-	"users":              lucide.Users,
-	"settings":           lucide.Settings,
-	"message-circle":     lucide.MessageCircle,
-	"mail":               lucide.Mail,
-	"heart":              lucide.Heart,
-	"bell":               lucide.Bell,
-	"package":            lucide.Package,
-	"star":               lucide.Star,
-	"bookmark":           lucide.Bookmark,
-	"calendar":           lucide.Calendar,
-	"clock":              lucide.Clock,
-	"camera":             lucide.Camera,
-	"image":              lucide.Image,
-	"map-pin":            lucide.MapPin,
-	"phone":              lucide.Phone,
-	"credit-card":        lucide.CreditCard,
-	"wallet":             lucide.Wallet,
-	"gift":               lucide.Gift,
-	"tag":                lucide.Tag,
-	"truck":              lucide.Truck,
-	"file-text":          lucide.FileText,
-	"folder":             lucide.Folder,
-	"download":           lucide.Download,
-	"upload":             lucide.Upload,
-	"share-2":            lucide.Share2,
-	"plus":               lucide.Plus,
-	"minus":              lucide.Minus,
-	"x":                  lucide.X,
-	"check":              lucide.Check,
-	"pencil":             lucide.Pencil,
-	"trash":              lucide.Trash,
-	"sliders-horizontal": lucide.SlidersHorizontal,
-	"list":               lucide.List,
-	"grid-2x2":           lucide.Grid2x2,
-	"layout-dashboard":   lucide.LayoutDashboard,
-	"chart-bar":          lucide.ChartBar,
-	"chart-line":         lucide.ChartLine,
-	"chart-pie":          lucide.ChartPie,
-	"activity":           lucide.Activity,
-	"trending-up":        lucide.TrendingUp,
-	"trending-down":      lucide.TrendingDown,
-	"lock":               lucide.Lock,
-	"key":                lucide.Key,
-	"log-out":            lucide.LogOut,
-	"log-in":             lucide.LogIn,
-	"eye":                lucide.Eye,
-	"eye-off":            lucide.EyeOff,
-	"info":               lucide.Info,
-	"circle-alert":       lucide.CircleAlert,
-	"triangle-alert":     lucide.TriangleAlert,
-	"circle-check":       lucide.CircleCheck,
-	"menu":               lucide.Menu,
-	"ellipsis":           lucide.Ellipsis,
-	"arrow-right":        lucide.ArrowRight,
-	"arrow-left":         lucide.ArrowLeft,
-	"chevron-right":      lucide.ChevronRight,
-	"chevron-left":       lucide.ChevronLeft,
-	"refresh-cw":         lucide.RefreshCw,
-	"globe":              lucide.Globe,
-	"sun":                lucide.Sun,
-	"moon":               lucide.Moon,
-	"wifi":               lucide.Wifi,
-	"music":              lucide.Music,
-	"play":               lucide.Play,
-	"pause":              lucide.Pause,
-	"video":              lucide.Video,
-	"mic":                lucide.Mic,
-	"headphones":         lucide.Headphones,
-	"book":               lucide.Book,
-	"graduation-cap":     lucide.GraduationCap,
-	"briefcase":          lucide.Briefcase,
-	"building":           lucide.Building,
-	"store":              lucide.Store,
-	"coffee":             lucide.Coffee,
-	"utensils":           lucide.Utensils,
-	"car":                lucide.Car,
-	"plane":              lucide.Plane,
-	"bike":               lucide.Bike,
-	"dumbbell":           lucide.Dumbbell,
-	"inbox":              lucide.Inbox,
-	"send":               lucide.Send,
-	"archive":            lucide.Archive,
-	"paperclip":          lucide.Paperclip,
-	"link":               lucide.Link,
-	"qr-code":            lucide.QrCode,
-	"scan":               lucide.Scan,
-	"shield":             lucide.Shield,
-	"zap":                lucide.Zap,
-	"sparkles":           lucide.Sparkles,
-	"flame":              lucide.Flame,
-	"award":              lucide.Award,
-	"trophy":             lucide.Trophy,
-	"target":             lucide.Target,
-	"compass":            lucide.Compass,
-	"navigation":         lucide.Navigation,
-	"home":               lucide.House,
-	"cart":               lucide.ShoppingCart,
-	"profile":            lucide.User,
-	"trash-2":            lucide.Trash,
-}
-
-// iconNamed is the icon a design names, nil for none.
+// iconNamed is the icon a design names, by its Lucide name or an alias;
+// one NSGo lacks draws as a circle.
 func iconNamed(name string) func() *core.SVG {
-	if name == "" {
-		return nil
-	}
-	if icon, ok := icons[name]; ok {
+	name, _ = flowfile.IconName(name)
+	if icon, ok := lucideIcons[name]; ok {
 		return icon
 	}
 	return lucide.Circle

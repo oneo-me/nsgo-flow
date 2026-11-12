@@ -8,13 +8,13 @@ import (
 const app = `title "Shop"
 
 screen signin "Sign in"
-  navbar "Sign in" back=true
-  input "Email" placeholder="you@example.com"
-  row
-    checkbox "Remember me" checked=true
-    link "Forgot password?"
+  text "Sign in" class="text-2xl font-bold"
+  image "A cup" src="https://example.com/cup.png"
+  box class="flex-row gap-2"
+    icon lock class="size-4"
+    text "Remember me"
   end
-  button "Sign in" variant=primary
+  svg "<svg viewBox='0 0 10 10'><circle cx='5' cy='5' r='4'/></svg>"
 
   flow login "Signing in"
     direction right
@@ -22,7 +22,8 @@ screen signin "Sign in"
     start -> check "go"
 
 screen home "Home" device=tablet
-  tabbar "Home" "Search" "Me" selected=1
+  box
+  end
   flow browse
     a -> b
   flow buy "Buying"
@@ -37,13 +38,13 @@ func TestParseProject(t *testing.T) {
 		t.Fatalf("project: %+v", p)
 	}
 	s := p.Screens[0]
-	if s.ID != "signin" || len(s.UI) != 4 || len(s.UI[2].Children) != 2 || s.UI[1].Attr("placeholder") != "you@example.com" {
+	if s.ID != "signin" || len(s.UI) != 4 || len(s.UI[2].Children) != 2 || s.UI[1].Attr("src") != "https://example.com/cup.png" {
 		t.Fatalf("signin: %+v", s)
 	}
 	if f := s.Flows[0]; f.ID != "login" || f.Title != "Signing in" || f.Direction != Right || len(f.Nodes) != 2 {
 		t.Fatalf("login: %+v", f)
 	}
-	if home := p.Screens[1]; home.Device != "tablet" || len(home.Flows) != 2 || len(home.UI[0].Items) != 3 {
+	if home := p.Screens[1]; home.Device != "tablet" || len(home.Flows) != 2 || home.UI[0].Kind != "box" {
 		t.Fatalf("home: %+v", home)
 	}
 	if s, f := p.FlowIndex("buy"); s != 1 || f != 1 {
@@ -56,7 +57,7 @@ func TestParseProject(t *testing.T) {
 	if again.Format() != p.Format() {
 		t.Fatalf("not stable:\n%s\n---\n%s", p.Format(), again.Format())
 	}
-	if !strings.Contains(p.Format(), "  row\n    checkbox \"Remember me\" checked=true\n") {
+	if !strings.Contains(p.Format(), "  box class=\"flex-row gap-2\"\n    icon \"lock\" class=\"size-4\"\n") {
 		t.Fatalf("format:\n%s", p.Format())
 	}
 }
@@ -77,18 +78,65 @@ func TestParseProjectReadsAFlowWithoutScreens(t *testing.T) {
 func TestParseProjectErrors(t *testing.T) {
 	for src, want := range map[string]string{
 		"screen a\nwidget":                   "line 2: unknown element",
-		"screen a\nrow\nbutton \"x\"":        "line 3: row has no end",
+		"screen a\nbox\ntext \"x\"":          "line 3: box has no end",
 		"screen a\nend":                      "end closes no",
-		"screen a\nbutton \"x\" variant=big": "unknown variant",
-		"screen a\nbutton \"x\" tone=muted":  "button takes no attribute \"tone\"; use icon, variant, size",
+		"screen a\ntext \"x\" src=y":         "text takes no attribute \"src\"; use class",
+		"screen a\ntext x y":                 "quote text with spaces",
+		"screen a\nicon nope":                "unknown icon \"nope\"",
+		"screen a\nicon cofee-cup":           "such as cup-soda",
+		"screen a\nsvg \"<div/>\"":           "svg needs a document",
+		"screen a\nsvg \"<svg>\"":            "svg XML syntax error",
 		"screen a\nscreen a":                 "a screen \"a\" exists",
 		"screen a\nflow f\nscreen b\nflow f": "a flow \"f\" exists",
 		"screen a device=watch":              "unknown device",
 		"screen a\ntitle \"x\"":              "title belongs before",
-		"screen a\ntabbar \"a\" selected=x":  "not a whole number",
 	} {
 		if _, err := ParseProject(src); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("%q: %v, want %q", src, err, want)
+		}
+	}
+}
+
+func TestElementPaths(t *testing.T) {
+	els, err := ParseUI("text \"a\"\nbox\n  text \"b\"\n  text \"c\"\nend\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if el, ok := ElementAt(els, "1.1"); !ok || el.Text != "c" {
+		t.Fatalf("1.1 = %+v", el)
+	}
+	if _, ok := ElementAt(els, "0.0"); ok {
+		t.Fatal("a text holds an element")
+	}
+	with, _ := ParseUI("text \"x\"\ntext \"y\"\n")
+	out, err := ReplaceElement(els, "1.0", with)
+	if err != nil || FormatUI(out) != "text \"a\"\nbox\n  text \"x\"\n  text \"y\"\n  text \"c\"\nend\n" {
+		t.Fatalf("%v\n%s", err, FormatUI(out))
+	}
+	if FormatUI(els) != "text \"a\"\nbox\n  text \"b\"\n  text \"c\"\nend\n" {
+		t.Fatal("replacing changed the elements")
+	}
+	if _, err := ReplaceElement(els, "5", nil); err == nil {
+		t.Fatal("replaced a missing element")
+	}
+}
+
+func TestIconsTakeLucideNamesAndAliases(t *testing.T) {
+	els, err := ParseUI("icon \"alert-circle\"\nicon \"badge-dollar-sign\"\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if els[0].Text != "circle-alert" || els[1].Text != "badge-dollar-sign" {
+		t.Fatalf("icons read as %q and %q", els[0].Text, els[1].Text)
+	}
+	for alias, name := range iconAliases {
+		if _, ok := IconName(name); !ok {
+			t.Errorf("alias %s names no icon %s", alias, name)
+		}
+	}
+	for _, name := range CommonIcons {
+		if _, ok := IconName(name); !ok {
+			t.Errorf("no common icon %s", name)
 		}
 	}
 }

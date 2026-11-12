@@ -13,7 +13,7 @@ import (
 	"unicode/utf8"
 )
 
-// Folder tool names: they read the project folder the user attached,
+// Folder tool names: they read the folder holding the open file,
 // and never write to it.
 const (
 	ToolListDir  = "list_dir"
@@ -40,15 +40,15 @@ func IsFolderTool(name string) bool {
 	return false
 }
 
-// FolderTools are the tools that read the attached project folder.
+// FolderTools are the tools that read the folder holding the open file.
 func FolderTools() []Tool {
-	dir := str("A folder relative to the project's root; the root when omitted.")
+	dir := str("A folder relative to the file's folder; that folder when omitted.")
 	const skips = "Skips hidden, dependency and build folders unless path names one."
 	return []Tool{
 		{ToolListDir, "List a folder of the project: subfolders end with /, files show their size.",
 			object(nil, map[string]any{"path": dir})},
 		{ToolReadFile, fmt.Sprintf("Read a text file of the project with line numbers, %d lines at a time unless limit says otherwise.", readLines),
-			object([]string{"path"}, map[string]any{"path": str("The file, relative to the project's root."),
+			object([]string{"path"}, map[string]any{"path": str("The file, relative to the open file's folder."),
 				"offset": map[string]any{"type": "integer", "description": "The first line to read, from 1."},
 				"limit":  map[string]any{"type": "integer", "description": "How many lines to read."}})},
 		{ToolGlob, "Find files whose paths match a glob such as **/*.go or src/**/route*.ts; ** matches any folders. " + skips,

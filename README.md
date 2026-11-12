@@ -26,10 +26,11 @@
 
 ## Features
 
-- Screens listed on the left, the open screen in the middle with a tab for its design and one for each flow chart, conversation on the right.
-- Designs for phone, tablet or desktop are drawn with real NSGo controls — buttons, fields, switches, tabs, stats, charts, sidebars and more — and can be tried.
+- Flow files open in tabs across the window's top; the left lists each screen's design and flow charts, the open one is in the middle, and the conversation runs the window's height on the right.
+- Files remember where they were opened from or saved to, so ⌘S saves them in place, and reopen at the next start.
+- Phone, tablet and desktop designs are drawn from boxes, texts, icons, images and SVG shaped by Tailwind CSS classes, so a draft can look like anything; zoom, pan and select its elements as in the flow charts.
 - The assistant asks what it needs, then lays out interfaces and adds, links and rearranges nodes with tools.
-- Attach a project folder, and the assistant reads its code to chart how it works.
+- The assistant works on what you select, can read your other open files, and reads the folder a file is saved in to chart how the code there works.
 - Each assistant change undoes as one step.
 - Works with any OpenAI-compatible provider that supports tool calls, local servers included.
 - Designs are plain-text `.flow` files you can read, diff and edit by hand.
@@ -50,9 +51,9 @@ On macOS, `.flow` files open with the app from the Finder; on Windows and Linux,
 
 1. Open **Settings** (⌘,) and enter a provider's base URL, such as `https://api.openai.com/v1`, an API key and a model that supports tool calls.
 2. Describe an app or a process in the assistant, such as "Design the sign-in screen of a coffee shop app" or "Chart how we handle an order".
-3. To chart an existing project, press **Attach project folder** above the message box and pick its folder.
-4. Answer its questions and watch it draw the screens and flows on the left; pick a screen on the left and switch between its design and flows with the tabs.
-5. Save the design as a `.flow` file, or open `examples/shop.flow` or `examples/order.flow` to start from an example.
+3. To chart an existing project, save the flow file in the project's folder: the assistant reads that folder.
+4. Answer its questions and watch it draw the screens and flows; pick a screen's design or flow on the left.
+5. A new file is saved where you choose first, and ⌘S saves it from then on; or open `examples/shop.flow` or `examples/order.flow` to start from an example.
 
 The [`flowfile` package comment](flowfile/) describes the file format.
 

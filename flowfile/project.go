@@ -1,10 +1,12 @@
 package flowfile
 
 import (
+	"encoding/xml"
+	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
 )
 
@@ -31,13 +33,14 @@ type Flow struct {
 	Doc
 }
 
-// Element is a piece of a screen's interface.
+// Element is a piece of a screen's interface: a box holding others, a
+// text, an icon, an image or an SVG drawing, its look given by Tailwind
+// CSS classes.
 type Element struct {
 	Kind string
-	Text string
-	// Items are the labels of an element that takes several, such as a
-	// tab bar's.
-	Items    []string
+	// Text is a text's content, an icon's name, an image's description
+	// or an SVG's document.
+	Text     string
 	Attrs    map[string]string
 	Children []Element
 }
@@ -50,78 +53,25 @@ type ElementSpec struct {
 	Kind string
 	// Holds says the element holds the lines up to its end.
 	Holds bool
-	// Items says the element takes several labels instead of one text.
-	Items bool
-	// Attrs are the attributes and the values each takes: nil any
-	// text, Number a whole number.
-	Attrs map[string][]string
+	// Attrs are the attributes it takes besides class.
+	Attrs []string
 	// Doc tells a reader, the model included, what the element is.
 	Doc string
 }
 
-// Number is the values of an attribute that takes a whole number.
-var Number = []string{"#"}
-
-var (
-	bools  = []string{"true", "false"}
-	tones  = []string{"muted", "accent", "info", "success", "warning", "danger"}
-	toned  = map[string][]string{"tone": tones}
-	picked = map[string][]string{"selected": Number}
-)
-
-// with adds the icon attribute to attrs.
-func with(attrs map[string][]string) map[string][]string {
-	attrs["icon"] = Icons
-	return attrs
-}
-
-// Elements are the kinds of element an interface is made of.
+// Elements are the kinds of element an interface is made of: a few
+// primitives that classes shape into anything, rather than ready-made
+// controls whose look cannot change.
 var Elements = []ElementSpec{
-	{Kind: "navbar", Attrs: with(map[string][]string{"back": bools, "action": nil}), Doc: "the bar at the top with the screen's title, a back arrow and an action on the right, or the action's icon"},
-	{Kind: "heading", Doc: "a large title"},
-	{Kind: "text", Attrs: toned, Doc: "a paragraph"},
-	{Kind: "link", Doc: "a text link"},
-	{Kind: "button", Attrs: with(map[string][]string{"variant": {"primary", "secondary", "outline", "ghost", "danger"}, "size": {"small", "large"}}), Doc: "a button; secondary when no variant is set"},
-	{Kind: "input", Attrs: with(map[string][]string{"placeholder": nil, "value": nil, "type": {"text", "password", "search", "multiline"}}), Doc: "a text field under its label"},
-	{Kind: "select", Attrs: map[string][]string{"value": nil, "placeholder": nil}, Doc: "a field that picks one of several values, under its label"},
-	{Kind: "otp", Attrs: map[string][]string{"length": Number}, Doc: "a one-time code's boxes, under its label"},
-	{Kind: "tags", Items: true, Doc: "a field of removable tags"},
-	{Kind: "checkbox", Attrs: map[string][]string{"checked": bools}, Doc: "a check box and its label"},
-	{Kind: "radio", Attrs: map[string][]string{"checked": bools}, Doc: "a radio button and its label"},
-	{Kind: "switch", Attrs: with(map[string][]string{"checked": bools, "note": nil}), Doc: "a setting's label, note and on/off switch"},
-	{Kind: "slider", Attrs: map[string][]string{"value": Number}, Doc: "a slider under its label; value runs from 0 to 100"},
-	{Kind: "rating", Attrs: map[string][]string{"value": Number}, Doc: "stars, value of 5"},
-	{Kind: "progress", Attrs: map[string][]string{"value": Number, "type": {"bar", "ring"}}, Doc: "a progress bar or ring under its label; value runs from 0 to 100"},
-	{Kind: "spinner", Doc: "a busy indicator with an optional label"},
-	{Kind: "segmented", Items: true, Attrs: picked, Doc: "a segmented control of its labels; selected counts from 1"},
-	{Kind: "tabs", Items: true, Attrs: picked, Doc: "tabs with an underline over the content below them; selected counts from 1"},
-	{Kind: "tabbar", Items: true, Attrs: picked, Doc: "the tab bar at the bottom of a phone app's screens; selected counts from 1"},
-	{Kind: "breadcrumbs", Items: true, Doc: "the path to the page, last item current"},
-	{Kind: "stepper", Items: true, Attrs: picked, Doc: "the steps of a process, the selected one current; selected counts from 1"},
-	{Kind: "pagination", Attrs: map[string][]string{"value": Number, "total": Number}, Doc: "page value of total pages"},
-	{Kind: "image", Attrs: map[string][]string{"height": Number}, Doc: "a placeholder for a picture, with an optional caption"},
-	{Kind: "avatar", Attrs: map[string][]string{"note": nil}, Doc: "a person's round picture, name and note"},
-	{Kind: "item", Attrs: with(map[string][]string{"note": nil, "trailing": nil}), Doc: "a list row: an icon, a title, a note below it and a value on the right"},
-	{Kind: "badge", Attrs: toned, Doc: "a small label in a pill"},
-	{Kind: "alert", Attrs: with(map[string][]string{"tone": tones, "note": nil}), Doc: "a callout with a title and a note"},
-	{Kind: "stat", Attrs: with(map[string][]string{"value": nil, "note": nil, "tone": tones}), Doc: "a dashboard figure: its label, a large value and a note such as a trend in the tone"},
-	{Kind: "chart", Attrs: map[string][]string{"values": nil}, Doc: "a bar chart titled by its text; values are numbers separated by commas"},
-	{Kind: "skeleton", Attrs: map[string][]string{"lines": Number}, Doc: "content still loading"},
-	{Kind: "calendar", Doc: "a month calendar"},
-	{Kind: "divider", Doc: "a line across"},
-	{Kind: "spacer", Doc: "empty room that pushes what follows to the end"},
-	{Kind: "row", Holds: true, Doc: "lays what it holds out side by side"},
-	{Kind: "column", Holds: true, Doc: "stacks what it holds"},
-	{Kind: "grid", Holds: true, Attrs: map[string][]string{"columns": Number}, Doc: "lays what it holds out in columns, 2 when unset"},
-	{Kind: "card", Holds: true, Doc: "a raised panel with an optional title that stacks what it holds"},
-	{Kind: "section", Holds: true, Doc: "a titled group of rows, such as a settings page's items and switches"},
-	{Kind: "sidebar", Holds: true, Doc: "a desktop or tablet app's navigation column on the left of the rest of the screen"},
-	{Kind: "navitem", Attrs: with(map[string][]string{"active": bools, "trailing": nil}), Doc: "a destination in a sidebar"},
+	{Kind: "box", Holds: true, Doc: "a rectangle laying out what it holds, a column unless its class has flex-row: with classes, any bar, panel, card, button, field, pill, circle or line"},
+	{Kind: "text", Doc: "its text, which wraps; size, weight and color it with classes"},
+	{Kind: "icon", Doc: "the Lucide icon its text names, as high as its font size: size it with size-* and color it with text-*"},
+	{Kind: "image", Attrs: []string{"src"}, Doc: "a picture its text describes: the image at the URL src, or a placeholder; size it with classes"},
+	{Kind: "svg", Doc: "any drawing, such as a chart, a logo or an illustration: its text is an SVG document, quoted with single quotes inside, sized by its class or else its viewBox"},
 }
 
 // attrOrder is the order Format writes attributes in.
-var attrOrder = []string{"back", "action", "icon", "variant", "size", "type", "placeholder", "value", "total", "length", "lines", "columns", "values",
-	"checked", "active", "selected", "height", "tone", "note", "trailing"}
+var attrOrder = []string{"src", "class"}
 
 // Spec returns the spec of the element kind.
 func Spec(kind string) (ElementSpec, bool) {
@@ -159,7 +109,7 @@ func (r *uiReader) line(toks []token) string {
 	head := toks[0]
 	if !head.quoted && head.text == "end" {
 		if len(r.open) == 0 {
-			return "end closes no row, column or card"
+			return "end closes no box"
 		}
 		el := r.open[len(r.open)-1]
 		r.open = r.open[:len(r.open)-1]
@@ -174,21 +124,24 @@ func (r *uiReader) line(toks []token) string {
 	for _, t := range toks[1:] {
 		key, value, isAttr := t.attr()
 		switch {
-		case !isAttr && spec.Items:
-			el.Items = append(el.Items, t.text)
 		case !isAttr && el.Text == "":
 			el.Text = t.text
 		case !isAttr:
-			return fmt.Sprintf("unexpected %q; write attributes as key=value", t.text)
+			return fmt.Sprintf("unexpected %q; quote text with spaces, and write attributes as key=value", t.text)
+		case key != "class" && !slices.Contains(spec.Attrs, key):
+			return fmt.Sprintf("%s takes no attribute %q; use %s", spec.Kind, key, strings.Join(append(slices.Clone(spec.Attrs), "class"), ", "))
 		default:
-			if msg := checkAttr(spec, key, value); msg != "" {
-				return msg
-			}
 			if el.Attrs == nil {
 				el.Attrs = map[string]string{}
 			}
 			el.Attrs[key] = value
 		}
+	}
+	if msg := checkElement(el); msg != "" {
+		return msg
+	}
+	if el.Kind == "icon" {
+		el.Text, _ = IconName(el.Text)
 	}
 	if spec.Holds {
 		r.open = append(r.open, el)
@@ -198,38 +151,53 @@ func (r *uiReader) line(toks []token) string {
 	return ""
 }
 
+// checkElement says what is wrong with an element's text.
+func checkElement(el Element) string {
+	switch el.Kind {
+	case "icon":
+		if _, ok := IconName(el.Text); !ok {
+			msg := fmt.Sprintf("unknown icon %q; use a Lucide icon's name", el.Text)
+			if similar := similarIcons(el.Text, 12); len(similar) > 0 {
+				msg += " such as " + strings.Join(similar, ", ")
+			}
+			return msg + ", or draw it with svg"
+		}
+	case "svg":
+		if err := checkSVG(el.Text); err != nil {
+			return "svg " + err.Error()
+		}
+	}
+	return ""
+}
+
+// checkSVG says why doc is not an SVG document.
+func checkSVG(doc string) error {
+	dec := xml.NewDecoder(strings.NewReader(doc))
+	root := ""
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if start, ok := tok.(xml.StartElement); ok && root == "" {
+			root = start.Name.Local
+		}
+	}
+	if root != "svg" {
+		return errors.New("needs a document such as <svg viewBox='0 0 24 24'>…</svg>")
+	}
+	return nil
+}
+
 // done returns the elements read, or what is still open.
 func (r *uiReader) done() ([]Element, string) {
 	if n := len(r.open); n > 0 {
 		return nil, fmt.Sprintf("%s has no end", r.open[n-1].Kind)
 	}
 	return r.out, ""
-}
-
-func checkAttr(spec ElementSpec, key, value string) string {
-	values, ok := spec.Attrs[key]
-	if !ok {
-		var keys []string
-		for _, k := range attrOrder {
-			if _, ok := spec.Attrs[k]; ok {
-				keys = append(keys, k)
-			}
-		}
-		if len(keys) == 0 {
-			return fmt.Sprintf("%s takes no attributes", spec.Kind)
-		}
-		return fmt.Sprintf("%s takes no attribute %q; use %s", spec.Kind, key, strings.Join(keys, ", "))
-	}
-	switch {
-	case values == nil:
-	case slices.Equal(values, Number):
-		if n, err := strconv.Atoi(value); err != nil || n < 0 {
-			return fmt.Sprintf("%s=%q is not a whole number", key, value)
-		}
-	case !slices.Contains(values, value):
-		return fmt.Sprintf("unknown %s %q; use one of %s", key, value, strings.Join(values, ", "))
-	}
-	return ""
 }
 
 // ParseUI reads the lines of an interface: elements, without a screen.
@@ -400,7 +368,6 @@ func (p Project) Clone() Project {
 func cloneElements(els []Element) []Element {
 	els = slices.Clone(els)
 	for i := range els {
-		els[i].Items = slices.Clone(els[i].Items)
 		els[i].Attrs = maps.Clone(els[i].Attrs)
 		els[i].Children = cloneElements(els[i].Children)
 	}
@@ -454,28 +421,15 @@ func formatUI(b *strings.Builder, els []Element, indent string) {
 		if el.Text != "" {
 			b.WriteString(" " + quote(el.Text))
 		}
-		for _, item := range el.Items {
-			b.WriteString(" " + quote(item))
-		}
-		spec, _ := Spec(el.Kind)
 		for _, key := range attrOrder {
-			value, ok := el.Attrs[key]
-			if !ok {
-				continue
+			if value, ok := el.Attrs[key]; ok {
+				fmt.Fprintf(b, " %s=%s", key, quote(value))
 			}
-			if spec.Attrs[key] == nil {
-				value = quote(value)
-			}
-			fmt.Fprintf(b, " %s=%s", key, value)
 		}
 		b.WriteByte('\n')
-		if spec.Holds {
+		if spec, _ := Spec(el.Kind); spec.Holds {
 			formatUI(b, el.Children, indent+"  ")
 			b.WriteString(indent + "end\n")
 		}
 	}
 }
-
-// Icons are the icon names an element's icon attribute takes, as Lucide
-// names them.
-var Icons = []string{"house", "search", "shopping-cart", "shopping-bag", "user", "users", "settings", "message-circle", "mail", "heart", "bell", "package", "star", "bookmark", "calendar", "clock", "camera", "image", "map-pin", "phone", "credit-card", "wallet", "gift", "tag", "truck", "file-text", "folder", "download", "upload", "share-2", "plus", "minus", "x", "check", "pencil", "trash", "sliders-horizontal", "list", "grid-2x2", "layout-dashboard", "chart-bar", "chart-line", "chart-pie", "activity", "trending-up", "trending-down", "lock", "key", "log-out", "log-in", "eye", "eye-off", "info", "circle-alert", "triangle-alert", "circle-check", "menu", "ellipsis", "arrow-right", "arrow-left", "chevron-right", "chevron-left", "refresh-cw", "globe", "sun", "moon", "wifi", "music", "play", "pause", "video", "mic", "headphones", "book", "graduation-cap", "briefcase", "building", "store", "coffee", "utensils", "car", "plane", "bike", "dumbbell", "inbox", "send", "archive", "paperclip", "link", "qr-code", "scan", "shield", "zap", "sparkles", "flame", "award", "trophy", "target", "compass", "navigation", "home", "cart", "profile"}

@@ -13,6 +13,7 @@ import (
 
 	"github.com/nsgo-dev/nsgo/base/textview"
 	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/desktop"
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
 	"github.com/nsgo-dev/nsgo/ui/chat"
@@ -57,48 +58,78 @@ func (t *turn) update(fn func(r *round)) {
 	})
 }
 
-// assistant is the conversation about the open document.
-type assistant struct {
-	cx *core.Scope
-	e  *editor
+// conversation is what was said about a document. A turn keeps
+// drawing on its document while another tab shows.
+type conversation struct {
 	// history is what the model has been told, the system prompt aside,
 	// which each request writes afresh.
-	history      []agent.Message
-	turns        *core.Signal[[]*turn]
+	history []agent.Message
+	turns   *core.Signal[[]*turn]
+	running *core.Signal[bool]
+	cancel  context.CancelFunc
+}
+
+func newConversation(cx *core.Scope) *conversation {
+	return &conversation{turns: core.NewSignalFunc(cx, []*turn(nil), func(a, b []*turn) bool { return false }),
+		running: core.NewSignal(cx, false)}
+}
+
+// clear starts the conversation anew.
+func (c *conversation) clear() {
+	c.stop()
+	c.history = nil
+	c.turns.Set(nil)
+}
+
+func (c *conversation) stop() {
+	if c.cancel != nil {
+		c.cancel()
+		c.cancel = nil
+	}
+}
+
+func (c *conversation) last() *turn {
+	ts := c.turns.GetUntracked()
+	if len(ts) == 0 {
+		return nil
+	}
+	return ts[len(ts)-1]
+}
+
+// assistant is the conversation about the document shown.
+type assistant struct {
+	cx           *core.Scope
+	e            *editor
 	draft        *core.Signal[string]
-	running      *core.Signal[bool]
 	now          *core.Signal[time.Time]
 	conversation *chat.ConversationState
-	cancel       context.CancelFunc
-	ids          int
+	// ids numbers the turns of every document, which the transcript keys.
+	ids int
 	// openSettings shows the provider's settings.
 	openSettings func()
 }
 
 func newAssistant(cx *core.Scope, e *editor, openSettings func()) *assistant {
 	a := &assistant{cx: cx, e: e, openSettings: openSettings,
-		turns:        core.NewSignalFunc(cx, []*turn(nil), func(a, b []*turn) bool { return false }),
 		draft:        core.NewSignal(cx, ""),
-		running:      core.NewSignal(cx, false),
 		now:          core.NewSignal(cx, cx.Now()),
 		conversation: chat.NewConversationState(cx)}
-	cx.Cleanup(a.stop)
+	cx.Cleanup(func() {
+		for _, d := range e.tabs.GetUntracked() {
+			d.chat.stop()
+		}
+	})
 	return a
 }
 
-// clear starts a new conversation.
-func (a *assistant) clear() {
-	a.stop()
-	a.history = nil
-	a.turns.Set(nil)
-}
+// chat is the conversation about the document shown, which a caller
+// reading it follows.
+func (a *assistant) chat() *conversation { return a.e.cur().chat }
 
-func (a *assistant) stop() {
-	if a.cancel != nil {
-		a.cancel()
-		a.cancel = nil
-	}
-}
+// clear starts a new conversation about the document shown.
+func (a *assistant) clear() { a.e.shown().chat.clear() }
+
+func (a *assistant) stop() { a.e.shown().chat.stop() }
 
 // send asks the model about the draft.
 func (a *assistant) send() {
@@ -111,31 +142,42 @@ func (a *assistant) send() {
 		a.openSettings()
 		return
 	}
+	if a.e.empty() {
+		// A conversation is about a file: a new one is saved first.
+		a.e.newFile(func(d *document) {
+			a.draft.Set("")
+			a.run(d, p, text)
+		})
+		return
+	}
 	a.stop()
 	a.draft.Set("")
-	a.run(p, text)
+	a.run(a.e.shown(), p, text)
 }
 
-// run starts a turn for prompt on a goroutine, which reaches the
+// run starts a turn about d for prompt on a goroutine, which reaches the
 // document through the UI's.
-func (a *assistant) run(p agent.Provider, prompt string) {
+func (a *assistant) run(d *document, p agent.Provider, prompt string) {
 	cx := a.cx
+	conv := d.chat
 	a.ids++
 	t := &turn{id: fmt.Sprintf("t%d", a.ids), prompt: prompt, start: cx.Now(),
 		status: core.NewSignal(cx, chat.Running),
 		rounds: core.NewSignalFunc(cx, []round{{}}, func(a, b []round) bool { return false }),
 		err:    core.NewSignal(cx, ""), end: core.NewSignal(cx, time.Time{})}
 	ctx, cancel := context.WithCancel(context.Background())
-	a.cancel = cancel
-	a.turns.Update(func(ts []*turn) []*turn { return append(slices.Clone(ts), t) })
-	a.running.Set(true)
+	conv.cancel = cancel
+	conv.turns.Update(func(ts []*turn) []*turn { return append(slices.Clone(ts), t) })
+	conv.running.Set(true)
 	a.conversation.JumpToLatest()
-	history := append(slices.Clone(a.history), agent.Message{Role: "user", Content: prompt})
-	// The folder a turn reads is the one attached when it began.
-	dir, name := core.Untracked(cx, func() string { return folder(cx) }), ""
+	history := append(slices.Clone(conv.history), agent.Message{Role: "user", Content: prompt})
+	// The folder a turn reads is the one holding the file when it began.
+	dir := ""
+	if path := d.path.GetUntracked(); path != "" {
+		dir = filepath.Dir(path)
+	}
 	tools := agent.Tools()
 	if dir != "" {
-		name = filepath.Base(dir)
 		tools = append(tools, agent.FolderTools()...)
 	}
 
@@ -172,7 +214,7 @@ func (a *assistant) run(p agent.Provider, prompt string) {
 	go func() {
 		added, err := agent.Run(ctx, p, history, tools, agent.Hooks{
 			Prompt: func() string {
-				return onUI(func() string { return agent.SystemPrompt(a.e.doc.GetUntracked(), a.e.at(), name) })
+				return onUI(func() string { return agent.SystemPrompt(d.doc.GetUntracked(), d.at(), a.context(d, dir)) })
 			},
 			Delta: func(d agent.Delta) {
 				live(func() {
@@ -201,21 +243,49 @@ func (a *assistant) run(p agent.Provider, prompt string) {
 					out, failed := readFolder(dir, c)
 					return onUI(func() string { a.done(t, c.ID, out, failed); return out })
 				}
-				return onUI(func() string { return a.call(t, c) })
+				return onUI(func() string { return a.call(d, t, c) })
 			},
 		})
-		cx.Post(func() { a.finish(t, cancel, history, added, err) })
+		cx.Post(func() { a.finish(conv, t, cancel, history, added, err) })
 	}()
 }
 
-// call runs a tool on the document and marks it done in the transcript.
-func (a *assistant) call(t *turn, c agent.ToolCall) string {
-	r := agent.Apply(a.e.doc.GetUntracked(), a.e.at(), c.Function.Name, c.Function.Arguments)
+// context is what the model is told of the files around d.
+func (a *assistant) context(d *document, dir string) agent.Context {
+	c := agent.Context{File: d.path.GetUntracked(), Folder: dir}
+	for _, o := range a.e.tabs.GetUntracked() {
+		if o != d {
+			c.Others = append(c.Others, o.path.GetUntracked())
+		}
+	}
+	return c
+}
+
+// call runs a tool on d and marks it done in the transcript; reading
+// another open file reads its tab's document.
+func (a *assistant) call(d *document, t *turn, c agent.ToolCall) string {
+	if c.Function.Name == agent.ToolGetProject {
+		var args struct{ File string }
+		json.Unmarshal([]byte(cmp(c.Function.Arguments, "{}")), &args)
+		if args.File != "" && args.File != d.path.GetUntracked() {
+			out, failed := "error: "+args.File+" is not open", true
+			for _, o := range a.e.tabs.GetUntracked() {
+				if o.path.GetUntracked() == args.File {
+					out, failed = cmp(o.doc.GetUntracked().Format(), "(empty)\n"), false
+				}
+			}
+			a.done(t, c.ID, out, failed)
+			return out
+		}
+	}
+	before := d.doc.GetUntracked()
+	r := agent.Apply(before, d.at(), c.Function.Name, c.Function.Arguments)
 	if r.Changed {
-		a.e.change(r.Project, t.id)
+		r.Output += classWarning(before, r.Project)
+		d.change(r.Project, t.id)
 	}
 	if r.Show.Screen != "" {
-		a.e.show(r.Show)
+		d.show(r.Show)
 	}
 	a.done(t, c.ID, r.Output, r.Failed)
 	return r.Output
@@ -251,22 +321,9 @@ func readFolder(dir string, c agent.ToolCall) (string, bool) {
 	return agent.ReadFolder(root.FS(), c.Function.Name, c.Function.Arguments)
 }
 
-// pickFolder asks for the project folder the assistant may read.
-func (a *assistant) pickFolder() {
-	a.cx.PickDirectories(core.PickDirectoriesOptions{}, func(dirs []core.Directory, err error) {
-		if err != nil {
-			a.e.toasts.Show(ui.ToastContent{Type: ui.ToastError, Title: locales.For(a.cx).FolderFailed(err.Error())})
-			return
-		}
-		if len(dirs) > 0 && dirs[0].Path != "" {
-			setFolder(a.cx, dirs[0].Path)
-		}
-	})
-}
-
 // finish ends a turn, keeping what it added to the history unless it
 // failed.
-func (a *assistant) finish(t *turn, cancel context.CancelFunc, history, added []agent.Message, err error) {
+func (a *assistant) finish(conv *conversation, t *turn, cancel context.CancelFunc, history, added []agent.Message, err error) {
 	cancel()
 	cancelled := errors.Is(err, context.Canceled)
 	a.cx.Batch(func() {
@@ -297,23 +354,15 @@ func (a *assistant) finish(t *turn, cancel context.CancelFunc, history, added []
 			t.err.Set(err.Error())
 		}
 		if err == nil || cancelled {
-			a.history = append(history, added...)
+			conv.history = append(history, added...)
 		}
-		if a.cancel != nil && t == a.last() {
-			a.cancel = nil
+		if conv.cancel != nil && t == conv.last() {
+			conv.cancel = nil
 		}
-		if t == a.last() {
-			a.running.Set(false)
+		if t == conv.last() {
+			conv.running.Set(false)
 		}
 	})
-}
-
-func (a *assistant) last() *turn {
-	ts := a.turns.GetUntracked()
-	if len(ts) == 0 {
-		return nil
-	}
-	return ts[len(ts)-1]
 }
 
 // retry runs a failed turn again in its place.
@@ -323,11 +372,12 @@ func (a *assistant) retry(t *turn) {
 		a.openSettings()
 		return
 	}
-	a.stop()
-	a.turns.Update(func(ts []*turn) []*turn {
+	d := a.e.shown()
+	d.chat.stop()
+	d.chat.turns.Update(func(ts []*turn) []*turn {
 		return slices.DeleteFunc(slices.Clone(ts), func(x *turn) bool { return x == t })
 	})
-	a.run(p, t.prompt)
+	a.run(d, p, t.prompt)
 }
 
 // toolLook is how the transcript names a tool.
@@ -536,35 +586,21 @@ func errorRow(cx *core.Scope, message func() string, retry func()) core.Node {
 	}}
 }
 
-// folderRow is the project folder the assistant reads, which pressing
-// changes, or a button that attaches one.
-func folderRow(cx *core.Scope, a *assistant) core.Node {
-	tr := locales.For(cx)
-	return core.Dynamic(func(cx *core.Scope) core.Node {
-		dir := folder(cx)
-		if dir == "" {
-			return core.View{Style: core.Style{Direction: core.Row}, Children: []core.Node{
-				ui.Button{Text: tr.AttachFolder(), Icon: lucide.FolderOpen, Variant: ui.ButtonGhost, Size: ui.SizeSmall,
-					OnPress: a.pickFolder, TestID: "attach-folder"},
-			}}
-		}
-		return core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 2}, Children: []core.Node{
-			ui.Button{Text: filepath.Base(dir), Label: tr.ChangeFolder(filepath.Base(dir)), Icon: lucide.FolderCode, Variant: ui.ButtonGhost,
-				Size: ui.SizeSmall, OnPress: a.pickFolder, TestID: "change-folder"},
-			ui.IconButton{Icon: lucide.X, Label: tr.DetachFolder(), Size: 24, OnPress: func() { setFolder(cx, "") }, TestID: "detach-folder"},
-		}}
-	})
-}
-
 // assistantPane is the conversation over the composer.
 func assistantPane(cx *core.Scope, a *assistant) core.Node {
 	tr := locales.For(cx)
 	colors := ui.ColorsOf(cx)
-	empty := func() bool { return len(a.turns.Get()) == 0 }
+	empty := func() bool { return len(a.chat().turns.Get()) == 0 }
 	ready := func() bool { return provider(cx).Ready() }
-	header := core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 8, Height: core.Pt(44), Padding: core.Symmetric(0, 12),
-		Borders: core.Edges{Bottom: 1}},
-		StyleFunc: func() core.Style { return core.Style{BorderColors: core.EdgeColors{Bottom: colors.Line()}} },
+	// The assistant reaches the window's top: its header is the title
+	// bar there, which drags the window and keeps clear of its controls.
+	header := core.View{Desktop: core.DesktopViewProps{WindowDrag: core.WindowDragOn},
+		Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 8, FlexShrink: 0, Borders: core.Edges{Bottom: 1}},
+		StyleFunc: func() core.Style {
+			bar := desktop.TitleBar(cx)
+			return core.Style{Height: core.Pt(max(titleBarHeight, bar.Top)), Padding: core.Edges{Left: 12, Right: 8 + bar.Right},
+				Background: ui.Chrome(cx), BorderColors: core.EdgeColors{Bottom: colors.Line()}}
+		},
 		Children: []core.Node{
 			ui.Icon(lucide.Sparkles, 16, colors.Muted),
 			ui.Text(tr.Assistant(), 13, ui.Semibold, colors.Text),
@@ -588,13 +624,12 @@ func assistantPane(cx *core.Scope, a *assistant) core.Node {
 			}},
 		}}
 	transcript := chat.Conversation{State: a.conversation, JumpLabel: tr.JumpToLatest(), TestID: "messages",
-		Children: []core.Node{core.Each(a.turns.Get, func(t *turn) string { return t.id }, func(cx *core.Scope, t func() *turn, _ func() int) core.Node {
+		Children: []core.Node{core.Each(func() []*turn { return a.chat().turns.Get() }, func(t *turn) string { return t.id }, func(cx *core.Scope, t func() *turn, _ func() int) core.Node {
 			return a.turnView(cx, core.Untracked(cx, t))
 		})}}
-	composer := core.View{Style: core.Style{Gap: 6, Padding: core.Edges{Left: 12, Right: 12, Bottom: 12}}, Children: []core.Node{
-		folderRow(cx, a),
+	composer := core.View{Style: core.Style{Padding: core.Edges{Left: 12, Right: 12, Top: 4, Bottom: 12}}, Children: []core.Node{
 		chat.Composer{Draft: a.draft.Get, OnDraftChange: a.draft.Set, Label: tr.Message(), Placeholder: tr.Placeholder(),
-			SendLabel: tr.Send(), StopLabel: tr.Stop(), Running: a.running.Get, OnSend: a.send, OnStop: a.stop, State: a.conversation, TestID: "composer"},
+			SendLabel: tr.Send(), StopLabel: tr.Stop(), Running: func() bool { return a.chat().running.Get() }, OnSend: a.send, OnStop: a.stop, State: a.conversation, TestID: "composer"},
 	}}
 	return core.View{Style: ui.FillRest,
 		StyleFunc: ui.Filled(colors.Background),

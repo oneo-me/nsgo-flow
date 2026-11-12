@@ -17,6 +17,7 @@ func TestLongConversationKeepsTheComposer(t *testing.T) {
 	url := model(t, replies...)
 	app := nsgotest.Start(t, Root, nsgotest.Size(1280, 800),
 		nsgotest.Storage(map[string]string{keyBaseURL: url, keyModel: "m"}))
+	newFileAt(t, app, "long.flow")
 	for i := range 6 {
 		app.Type("label:Message", "Question")
 		app.Press("label:Send")

@@ -15,7 +15,7 @@ import (
 // the view keeps a face while its ID stays.
 func diagramData(e *editor, flow string) func() uiflow.Data {
 	return func() uiflow.Data {
-		d := e.flowDoc(cmp(flow, e.flow.Get()))
+		d := e.cur().flowDoc(cmp(flow, e.cur().flow.Get()))
 		var data uiflow.Data
 		for _, n := range d.Nodes {
 			data.Nodes = append(data.Nodes, uiflow.Node{ID: n.ID, Label: n.Label, Muted: n.Status == "skipped",
@@ -32,7 +32,7 @@ func diagramData(e *editor, flow string) func() uiflow.Data {
 // points.
 func diagramDirection(e *editor, flow string) func() uiflow.Direction {
 	return func() uiflow.Direction {
-		if e.flowDoc(cmp(flow, e.flow.Get())).Direction == flowfile.Right {
+		if e.cur().flowDoc(cmp(flow, e.cur().flow.Get())).Direction == flowfile.Right {
 			return uiflow.LeftToRight
 		}
 		return uiflow.TopToBottom
@@ -49,7 +49,7 @@ type nodeCard struct {
 // Render implements core.Node.
 func (c nodeCard) Render(cx *core.Scope) core.Node {
 	node := core.NewMemo(cx, func() flowfile.Node {
-		n, _ := c.e.flowDoc(cmp(c.flow, c.e.flow.Get())).Node(c.id)
+		n, _ := c.e.cur().flowDoc(cmp(c.flow, c.e.cur().flow.Get())).Node(c.id)
 		return n
 	})
 	return core.Dynamic(func(cx *core.Scope) core.Node { return card(cx, node.Get()) })
@@ -107,7 +107,7 @@ func flowPane(cx *core.Scope, e *editor) core.Node {
 	tr := locales.For(cx)
 	colors := ui.ColorsOf(cx)
 	fin := ui.FinOf(cx)
-	full := func() bool { return len(e.flowDoc(e.flow.Get()).Nodes) > 0 }
+	full := func() bool { d := e.cur(); return len(d.flowDoc(d.flow.Get()).Nodes) > 0 }
 	tool := func(icon func() *core.SVG, label string, enabled func() bool, press func(), testID string) core.Node {
 		b := ui.IconButton{Icon: icon, Label: label, OnPress: press, TestID: testID}
 		if enabled != nil {
@@ -120,8 +120,6 @@ func flowPane(cx *core.Scope, e *editor) core.Node {
 			return fin.Raised().Over(core.Style{Background: colors.Surface(), BorderColor: colors.Border()})
 		},
 		Children: []core.Node{
-			tool(lucide.Undo2, tr.UndoChange(), func() bool { return len(e.undos.Get()) > 0 }, e.undo, "undo"),
-			tool(lucide.Redo2, tr.RedoChange(), func() bool { return len(e.redos.Get()) > 0 }, e.redo, "redo"),
 			tool(lucide.ArrowRightLeft, tr.LeftToRight(), full, e.toggleDirection, "direction"),
 			tool(lucide.ZoomOut, tr.ZoomOut(), full, func() { e.camera.ZoomOut() }, "zoom-out"),
 			tool(lucide.ZoomIn, tr.ZoomIn(), full, func() { e.camera.ZoomIn() }, "zoom-in"),
@@ -130,17 +128,19 @@ func flowPane(cx *core.Scope, e *editor) core.Node {
 	// One view follows the open flow: remounting a chart is costly.
 	view := uiflow.View{TestID: "flow", State: e.camera, Data: diagramData(e, ""), Direction: diagramDirection(e, ""),
 		LabelFunc: func() string {
-			d := e.flowDoc(e.flow.Get())
-			return tr.DiagramLabel(len(d.Nodes), len(d.Edges))
+			d := e.cur()
+			f := d.flowDoc(d.flow.Get())
+			return tr.DiagramLabel(len(f.Nodes), len(f.Edges))
 		},
-		EmptyText: tr.FlowEmpty(), Selected: e.selected.Get, OnSelect: e.selected.Set, Overlay: toolbar}
+		EmptyText: tr.FlowEmpty(), Selected: func() string { return e.cur().selected.Get() }, OnSelect: func(id string) { e.shown().selected.Set(id) }, Overlay: toolbar}
 	return core.View{Style: ui.FillRest, StyleFunc: ui.Filled(colors.Background), Children: []core.Node{view}}
 }
 
 // toggleDirection turns the open flow between down and right.
 func (e *editor) toggleDirection() {
-	p := e.doc.GetUntracked().Clone()
-	i, j := p.FlowIndex(e.flow.GetUntracked())
+	d := e.shown()
+	p := d.doc.GetUntracked().Clone()
+	i, j := p.FlowIndex(d.flow.GetUntracked())
 	if i < 0 {
 		return
 	}
@@ -150,6 +150,6 @@ func (e *editor) toggleDirection() {
 	} else {
 		f.Direction = flowfile.Right
 	}
-	e.change(p, "")
+	d.change(p, "")
 	e.cx.Post(func() { e.camera.Fit() })
 }

@@ -16,6 +16,8 @@ github.com/google/pprof v0.0.0-20230207041349-798e818bf904 h1:4/hN5RUoecvl+RmJRE
 github.com/google/pprof v0.0.0-20230207041349-798e818bf904/go.mod h1:uglQLonpP8qtYCYyzA+8c/9qtqgA3qsXGYqCPKARAFg=
 github.com/nsgo-dev/nsgo v0.0.0-20261112121347-3eb043c9d1db h1:m+WsjZHuFpnl5e+6kbWh3nCqGpnDw1VghrLIqmflKgo=
 github.com/nsgo-dev/nsgo v0.0.0-20261112121347-3eb043c9d1db/go.mod h1:CqPfBVvmmYVPE+6B3LHcRVr9B5kyx4GVEQWEzz1mzF4=
+github.com/nsgo-dev/nsgo v0.0.0-20261112142707-fad7c44c132b h1:pXO7l1tFXhTRf+U1+MCJDPgc9YV+/P76b/1+NG2SATk=
+github.com/nsgo-dev/nsgo v0.0.0-20261112142707-fad7c44c132b/go.mod h1:CqPfBVvmmYVPE+6B3LHcRVr9B5kyx4GVEQWEzz1mzF4=
 github.com/oneo-me/nsgo v0.0.0-20261109142343-48361112bf0e h1:eoN4iZyLPrPJhNg+04YkDPdBlgWbDkYNNsjkTQdt/AE=
 github.com/oneo-me/nsgo v0.0.0-20261109142343-48361112bf0e/go.mod h1:F3+8EfWgGWoEN8ZfBfXPhLKKOTNClkj5uUOCa2P36iM=
 github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZqKjWU=

@@ -3,6 +3,7 @@ package flowfile
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -129,4 +130,79 @@ func checkNode(n Node) error {
 		return fmt.Errorf("unknown status %q; use one of %s", n.Status, strings.Join(Statuses, ", "))
 	}
 	return nil
+}
+
+// Element paths name an element of an interface by its index among its
+// siblings at each level, from 0 and joined by dots: "1.0" is the first
+// element the second one holds.
+
+// ParsePath reads an element path.
+func ParsePath(path string) ([]int, error) {
+	var out []int
+	for _, part := range strings.Split(path, ".") {
+		n, err := strconv.Atoi(part)
+		if err != nil || n < 0 {
+			return nil, fmt.Errorf("%q is not an element path such as 1.0", path)
+		}
+		out = append(out, n)
+	}
+	return out, nil
+}
+
+// FormatPath writes an element path.
+func FormatPath(path []int) string {
+	parts := make([]string, len(path))
+	for i, n := range path {
+		parts[i] = strconv.Itoa(n)
+	}
+	return strings.Join(parts, ".")
+}
+
+// ElementAt returns the element of els at path.
+func ElementAt(els []Element, path string) (Element, bool) {
+	at, err := ParsePath(path)
+	if err != nil {
+		return Element{}, false
+	}
+	for i, n := range at {
+		if n >= len(els) {
+			return Element{}, false
+		}
+		if i == len(at)-1 {
+			return els[n], true
+		}
+		els = els[n].Children
+	}
+	return Element{}, false
+}
+
+// ReplaceElement returns els with the element at path replaced by with,
+// which may be several elements or none; els is unchanged.
+func ReplaceElement(els []Element, path string, with []Element) ([]Element, error) {
+	at, err := ParsePath(path)
+	if err != nil {
+		return nil, err
+	}
+	var replace func(els []Element, at []int) ([]Element, bool)
+	replace = func(els []Element, at []int) ([]Element, bool) {
+		n := at[0]
+		if n >= len(els) {
+			return nil, false
+		}
+		out := slices.Clone(els)
+		if len(at) == 1 {
+			return slices.Concat(out[:n], with, out[n+1:]), true
+		}
+		if spec, _ := Spec(out[n].Kind); !spec.Holds {
+			return nil, false
+		}
+		children, ok := replace(out[n].Children, at[1:])
+		out[n].Children = children
+		return out, ok
+	}
+	out, ok := replace(els, at)
+	if !ok {
+		return nil, fmt.Errorf("no element at %s", path)
+	}
+	return out, nil
 }

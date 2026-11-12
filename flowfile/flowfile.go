@@ -6,14 +6,18 @@
 //	title "Shop"
 //
 //	screen signin "Sign in" device=phone   # or tablet, desktop
-//	  navbar "Sign in" back=true
-//	  input "Email" placeholder="you@example.com"
-//	  input "Password" type=password
-//	  row
-//	    checkbox "Remember me" checked=true
-//	    link "Forgot password?"
+//	  box class="flex-1 gap-4 p-6"
+//	    text "Welcome back" class="text-2xl font-bold"
+//	    box class="flex-row items-center gap-2 rounded-xl border border-border px-3 h-11"
+//	      icon mail class="size-4 text-muted-foreground"
+//	      text "you@example.com" class="text-muted-foreground"
+//	    end
+//	    box class="h-11 items-center justify-center rounded-xl bg-blue-600"
+//	      text "Sign in" class="font-semibold text-white"
+//	    end
+//	    image "A cup of coffee" class="h-40 rounded-2xl"
+//	    svg "<svg viewBox='0 0 100 40'><path d='M0 30 L50 10 L100 20' stroke='#2563eb' fill='none'/></svg>"
 //	  end
-//	  button "Sign in" variant=primary
 //
 //	  flow login "Signing in"
 //	    direction right              # or down
@@ -25,11 +29,12 @@
 //	    check ..> start "invalid"    # a dashed edge
 //	    a -> b -> c                  # a chain of edges
 //
-// A screen's interface comes before its flows: one element a line, and
-// row, column and card hold the lines up to their end. Elements lists the
-// elements and their attributes. Screen and flow IDs are unique in the
-// file. An edge may name nodes no line declares; they take their ID as
-// their label.
+// A screen's interface comes before its flows: one element a line, and a
+// box holds the lines up to its end. The interface is a few primitives,
+// listed in Elements, each shaped by Tailwind CSS classes, so a design can
+// look like anything rather than like the controls of one toolkit. Screen
+// and flow IDs are unique in the file. An edge may name nodes no line
+// declares; they take their ID as their label.
 //
 // A file without screens is a single flow, which reads as screen main
 // with flow main. Format writes a project back in the canonical form,

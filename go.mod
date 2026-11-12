@@ -2,7 +2,7 @@ module github.com/oneo-me/nsgo-flow
 
 go 1.26.0
 
-require github.com/nsgo-dev/nsgo v0.0.0-20261112121347-3eb043c9d1db
+require github.com/nsgo-dev/nsgo v0.0.0-20261112142707-fad7c44c132b
 
 require (
 	github.com/andybalholm/brotli v1.2.6 // indirect

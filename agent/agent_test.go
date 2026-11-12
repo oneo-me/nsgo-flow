@@ -22,10 +22,10 @@ func TestApply(t *testing.T) {
 		{ToolAddEdges, `{"edges":[{"from":"a","to":"b","label":"go","dashed":true}]}`, "added 1 edges"},
 		{ToolUpdateNode, `{"id":"b","rename_to":"work","status":"doing"}`, "updated b"},
 		{ToolSetLayout, `{"title":"Plan","direction":"right","project_title":"App"}`, "layout set"},
-		{ToolAddScreen, `{"id":"signin","title":"Sign in","ui":"navbar \"Sign in\"\nrow\n  button \"Go\" variant=primary\nend"}`, "screen signin has 2 elements and 0 flows"},
+		{ToolAddScreen, `{"id":"signin","title":"Sign in","ui":"text \"Sign in\"\nbox class=\"flex-row\"\n  icon check class=\"size-4\"\nend"}`, "screen signin has 2 elements and 0 flows"},
 		{ToolAddFlow, `{"id":"login","title":"Log in"}`, "flow login is on screen signin"},
 		{ToolAddNodes, `{"nodes":[{"id":"tap","label":"Tap Go"}]}`, "added 1 nodes"},
-		{ToolSetUI, `{"screen":"main","ui":"heading \"Plan\""}`, "screen main has 1 elements"},
+		{ToolSetUI, `{"screen":"main","ui":"text \"Plan\""}`, "screen main has 1 elements"},
 	}
 	for _, s := range steps {
 		r := Apply(p, at, s.tool, s.args)
@@ -40,7 +40,7 @@ func TestApply(t *testing.T) {
 	want := `title "App"
 
 screen main
-  heading "Plan"
+  text "Plan"
 
   flow main "Plan"
     direction right
@@ -51,9 +51,9 @@ screen main
     a ..> work "go"
 
 screen signin "Sign in"
-  navbar "Sign in"
-  row
-    button "Go" variant=primary
+  text "Sign in"
+  box class="flex-row"
+    icon "check" class="size-4"
   end
 
   flow login "Log in"
@@ -143,7 +143,7 @@ func TestRunCallsToolsUntilTheModelAnswers(t *testing.T) {
 	var text, reasoning strings.Builder
 	added, err := Run(context.Background(), Provider{BaseURL: srv.URL + "/v1/", APIKey: "key", Model: "m"},
 		[]Message{{Role: "user", Content: "Draw A"}}, Tools(), Hooks{
-			Prompt: func() string { return SystemPrompt(doc, Location{}, "") },
+			Prompt: func() string { return SystemPrompt(doc, Location{}, Context{}) },
 			Delta:  func(d Delta) { text.WriteString(d.Text); reasoning.WriteString(d.Reasoning) },
 			Reply:  func(Message) {},
 			Call: func(c ToolCall) string {
@@ -211,7 +211,27 @@ func TestReadFolder(t *testing.T) {
 			t.Errorf("%s %s:\n%q, failed %v", s.tool, s.args, out, failed)
 		}
 	}
-	if !strings.Contains(SystemPrompt(flowfile.Project{}, Location{}, "demo"), `project folder "demo"`) {
-		t.Fatal("the prompt does not mention the folder")
+	prompt := SystemPrompt(flowfile.Project{}, Location{}, Context{File: "/w/app.flow", Folder: "/w", Others: []string{"/x/b.flow"}})
+	if !strings.Contains(prompt, `in the folder "/w"`) || !strings.Contains(prompt, "/x/b.flow") {
+		t.Fatal("the prompt does not mention the folder and the other files")
+	}
+}
+
+func TestSetElement(t *testing.T) {
+	p, _ := flowfile.ParseProject("screen a\n  box\n    text \"old\"\n  end\n")
+	at := Location{Screen: "a", Design: true}
+	r := Apply(p, at, ToolSetElement, `{"path":"0.0","ui":"text \"new\" class=\"font-bold\""}`)
+	if r.Failed || r.Show.Element != "0.0" || !strings.Contains(r.Project.Format(), `text "new" class="font-bold"`) {
+		t.Fatalf("set_element: %+v", r)
+	}
+	if r := Apply(p, at, ToolSetElement, `{"path":"0.0","ui":""}`); r.Failed || strings.Contains(r.Project.Format(), "old") {
+		t.Fatalf("removing: %+v", r)
+	}
+	if r := Apply(p, at, ToolSetElement, `{"path":"3","ui":""}`); !r.Failed {
+		t.Fatalf("a missing element: %+v", r)
+	}
+	prompt := SystemPrompt(p, Location{Screen: "a", Design: true, Element: "0.0"}, Context{})
+	if !strings.Contains(prompt, "selected element 0.0") || !strings.Contains(prompt, `text "old"`) {
+		t.Fatalf("the prompt does not show the selection:\n%s", prompt)
 	}
 }
