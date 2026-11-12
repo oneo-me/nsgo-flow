@@ -1,0 +1,87 @@
+---
+import Icon from './Icon.astro';
+import Mark from './Mark.astro';
+import { links, localePath, otherLang, pageCopy, type Lang } from '../site';
+
+interface Props {
+  lang: Lang;
+  path?: string;
+}
+
+const { lang, path = '' } = Astro.props;
+const tr = pageCopy(lang);
+const home = localePath(lang);
+const alternate = localePath(otherLang(lang), path);
+const nav = [
+  { href: `${home}#features`, label: tr.nav.features },
+  { href: `${home}#how`, label: tr.nav.how },
+  { href: localePath(lang, 'privacy/'), label: tr.nav.privacy },
+];
+---
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href={home} aria-label={tr.brand.name}>
+      <Mark size={30} />
+      <span>{tr.brand.name}</span>
+    </a>
+
+    <nav class="nav">
+      {nav.map((item) => <a href={item.href}>{item.label}</a>)}
+    </nav>
+
+    <div class="header-actions">
+      <a
+        class="lang-switch"
+        href={alternate}
+        hreflang={otherLang(lang) === 'zh' ? 'zh-CN' : 'en'}
+        lang={otherLang(lang) === 'zh' ? 'zh-CN' : 'en'}
+        aria-label={tr.nav.languageLabel}
+        data-lang-link={otherLang(lang)}
+        data-umami-event="switch-language"
+      >
+        {tr.nav.language}
+      </a>
+
+      <button class="icon-btn theme-toggle" type="button" aria-label={tr.nav.theme} data-theme-toggle>
+        <span class="theme-icon theme-icon--sun"><Icon name="sun" size={18} /></span>
+        <span class="theme-icon theme-icon--moon"><Icon name="moon" size={18} /></span>
+      </button>
+
+      <a
+        class="icon-btn github-btn"
+        href={links.repo}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={tr.nav.github}
+        data-umami-event="open-github"
+      >
+        <Icon name="github" size={19} />
+      </a>
+
+      <a class="btn btn--primary btn--small header-cta" href={`${home}#get-started`} data-umami-event="get-started">
+        {tr.nav.getStarted}
+      </a>
+
+      <details class="mobile-menu">
+        <summary class="icon-btn" aria-label={tr.nav.menu}>
+          <Icon name="menu" size={19} />
+        </summary>
+        <div class="mobile-menu-panel">
+          {nav.map((item) => <a href={item.href}>{item.label}</a>)}
+          <a
+            href={links.repo}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-umami-event="open-github"
+          >
+            {tr.nav.github} <Icon name="arrow-up-right" size={15} />
+          </a>
+          <a class="btn btn--primary" href={`${home}#get-started`} data-umami-event="get-started">
+            {tr.nav.getStarted}
+          </a>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>

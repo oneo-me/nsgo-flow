@@ -1,0 +1,188 @@
+---
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { langAlternate, localePath, otherLang, pageCopy, type Lang } from '../site';
+
+interface Props {
+  lang: Lang;
+  path?: string;
+  title: string;
+  description: string;
+  home?: boolean;
+  redirect?: boolean;
+}
+
+const { lang, path = '', title, description, home = false, redirect = true } = Astro.props;
+const tr = pageCopy(lang);
+const canonical = new URL(localePath(lang, path), Astro.site).href;
+const alternatePath = localePath(otherLang(lang), path);
+const alternate = new URL(alternatePath, Astro.site).href;
+const image = new URL(`${import.meta.env.BASE_URL}og.png`, Astro.site).href;
+const fullTitle = home ? title : `${title} — ${tr.brand.name}`;
+
+const app = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tr.brand.name,
+  description: tr.meta.homeDescription,
+  applicationCategory: 'DesignApplication',
+  operatingSystem: 'macOS, Windows, Linux',
+  url: new URL(import.meta.env.BASE_URL, Astro.site).href,
+  license: 'https://opensource.org/license/mit',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+};
+---
+
+<!doctype html>
+<html lang={langAlternate(lang)}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fbfaf7" />
+    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
+    <link rel="icon" type="image/png" href={`${import.meta.env.BASE_URL}icon.png`} />
+    <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={langAlternate(lang)} href={canonical} />
+    <link rel="alternate" hreflang={langAlternate(otherLang(lang))} href={alternate} />
+    <link rel="alternate" hreflang="x-default" href={new URL(localePath('en', path), Astro.site).href} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={tr.brand.name} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={tr.brand.name} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+    {home && <script type="application/ld+json" set:html={JSON.stringify(app)} />}
+
+    <!-- Umami counts the deployed site's visits, tagged "website" beside
+         the app's own statistics; data-domains skips local servers and
+         other hosts. -->
+    <script
+      is:inline
+      defer
+      src="https://umami.oneo.me/script.js"
+      data-website-id="0d6c7a62-255c-498f-ad36-c4c57d93ab0c"
+      data-domains="oneo-me.github.io"
+      data-tag="website"></script>
+
+    {redirect && <script is:inline define:vars={{ lang, alternatePath }}>
+      // Apply the stored appearance before the first paint, and send a first
+      // visit from a Chinese browser to the Chinese page. A choice made with
+      // the language switch is kept in `flow-lang`.
+      (function () {
+        var root = document.documentElement;
+        var stored = null;
+        try {
+          stored = localStorage.getItem('flow-theme');
+        } catch (error) {}
+        var dark = stored
+          ? stored === 'dark'
+          : matchMedia('(prefers-color-scheme: dark)').matches;
+        root.dataset.theme = dark ? 'dark' : 'light';
+        root.style.colorScheme = dark ? 'dark' : 'light';
+        var themeColor = document.querySelector('meta[name="theme-color"]');
+        if (themeColor) themeColor.setAttribute('content', dark ? '#0b0d12' : '#fbfaf7');
+        var chosen = null;
+        try {
+          chosen = localStorage.getItem('flow-lang');
+        } catch (error) {}
+        if (lang !== 'en' || chosen === 'en') return;
+        var languages = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+        var chinese = languages.some(function (language) {
+          return /^zh\b/i.test(language);
+        });
+        if (chinese) location.replace(alternatePath);
+      })();
+    </script>}
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{tr.actions.skip}</a>
+    <Header lang={lang} path={path} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+
+    <script>
+      const root = document.documentElement;
+
+      document.querySelectorAll<HTMLElement>('[data-theme-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const dark = root.dataset.theme !== 'dark';
+          root.dataset.theme = dark ? 'dark' : 'light';
+          root.style.colorScheme = dark ? 'dark' : 'light';
+          try {
+            localStorage.setItem('flow-theme', dark ? 'dark' : 'light');
+          } catch (error) {}
+          const meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', dark ? '#0b0d12' : '#fbfaf7');
+        });
+      });
+
+      document.querySelectorAll<HTMLAnchorElement>('[data-lang-link]').forEach((link) => {
+        link.addEventListener('click', () => {
+          try {
+            localStorage.setItem('flow-lang', link.dataset.lang ?? 'en');
+          } catch (error) {}
+        });
+      });
+
+      // copyText writes the text with the clipboard API, or a hidden textarea
+      // where the page is not secure or the browser refuses.
+      async function copyText(text: string) {
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return;
+          } catch (error) {}
+        }
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        try {
+          document.execCommand('copy');
+        } finally {
+          document.body.removeChild(area);
+        }
+      }
+
+      document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          try {
+            await copyText(button.dataset.copy ?? '');
+            const label = button.querySelector<HTMLElement>('[data-copy-label]');
+            if (label) {
+              label.textContent = button.dataset.labelCopied ?? label.textContent;
+              setTimeout(() => {
+                label.textContent = button.dataset.labelCopy ?? label.textContent;
+              }, 2000);
+            }
+          } catch (error) {}
+        });
+      });
+
+      document.querySelectorAll<HTMLDetailsElement>('.mobile-menu').forEach((menu) => {
+        menu.querySelectorAll('a').forEach((link) => {
+          link.addEventListener('click', () => {
+            menu.open = false;
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

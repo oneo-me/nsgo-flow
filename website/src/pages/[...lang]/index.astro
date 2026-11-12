@@ -1,0 +1,12 @@
+---
+import Home from '../../components/Home.astro';
+import { langOf, langPaths } from '../../site';
+
+export function getStaticPaths() {
+  return langPaths();
+}
+
+const lang = langOf(Astro.params.lang);
+---
+
+<Home lang={lang} />

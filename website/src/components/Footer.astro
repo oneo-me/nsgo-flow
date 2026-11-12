@@ -1,0 +1,87 @@
+---
+import Icon from './Icon.astro';
+import Mark from './Mark.astro';
+import { links, localePath, pageCopy, type Lang } from '../site';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const tr = pageCopy(lang);
+const home = localePath(lang);
+const year = new Date().getFullYear();
+
+type FooterLink = { href: string; label: string; event?: string };
+type FooterColumn = { title: string; links: FooterLink[] };
+
+const columns: FooterColumn[] = [
+  {
+    title: tr.footer.product,
+    links: [
+      { href: `${home}#features`, label: tr.footer.features },
+      { href: `${home}#how`, label: tr.footer.how },
+      { href: localePath(lang, 'privacy/'), label: tr.footer.privacy },
+    ],
+  },
+  {
+    title: tr.footer.resources,
+    links: [
+      { href: links.readme, label: tr.footer.readme, event: 'open-readme' },
+      { href: links.changelog, label: tr.footer.changelog, event: 'open-changelog' },
+      { href: links.examples, label: tr.footer.examples, event: 'open-examples' },
+    ],
+  },
+  {
+    title: tr.footer.elsewhere,
+    links: [
+      { href: links.blog, label: tr.footer.blog, event: 'open-blog' },
+      { href: links.x, label: tr.footer.x, event: 'open-x' },
+      { href: links.sponsors, label: tr.footer.sponsors, event: 'open-sponsors' },
+    ],
+  },
+];
+---
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a class="brand" href={home} aria-label={tr.brand.name}>
+        <Mark size={28} />
+        <span>{tr.brand.name}</span>
+      </a>
+      <p>{tr.brand.tagline}</p>
+      <a class="footer-license" href={links.license} target="_blank" rel="noopener noreferrer">
+        <Icon name="shield" size={15} /> MIT
+      </a>
+    </div>
+
+    {columns.map((column) => (
+      <nav class="footer-column" aria-label={column.title}>
+        <h2>{column.title}</h2>
+        {column.links.map((link) => (
+          <a
+            href={link.href}
+            {...(link.event ? { 'data-umami-event': link.event } : {})}
+            {...(link.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    ))}
+  </div>
+
+  <div class="wrap footer-bottom">
+    <p>© {year} {tr.footer.rights}</p>
+    <p class="footer-built">
+      <a href={links.nsgo} target="_blank" rel="noopener noreferrer" data-umami-event="open-nsgo">
+        {tr.footer.built}
+      </a>
+      <span class="footer-dot" aria-hidden="true">·</span>
+      <a href={links.repo} target="_blank" rel="noopener noreferrer" data-umami-event="open-github">
+        <Icon name="github" size={15} /> GitHub
+      </a>
+    </p>
+  </div>
+</footer>

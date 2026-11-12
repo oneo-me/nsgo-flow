@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    padding: 0 64px;
+    background: #fbfaf7;
+    color: #14161b;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .glow {
+    position: absolute; inset: -220px -10% auto; height: 700px;
+    background:
+      radial-gradient(520px 340px at 18% 42%, rgb(84 88 214 / 18%), transparent 68%),
+      radial-gradient(460px 300px at 56% 20%, rgb(69 165 106 / 13%), transparent 70%),
+      radial-gradient(420px 280px at 78% 74%, rgb(226 166 61 / 13%), transparent 70%);
+    pointer-events: none;
+  }
+  .dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(#d3cdc0 1px, transparent 1px);
+    background-size: 24px 24px;
+    opacity: .4;
+    mask-image: radial-gradient(70% 80% at 45% 40%, #000, transparent 80%);
+  }
+  .copy { position: relative; width: 500px; flex-shrink: 0; }
+  .brand { display: flex; align-items: center; gap: 14px; font-size: 23px; font-weight: 650; letter-spacing: -.02em; }
+  h1 { margin: 40px 0 0; font-size: 62px; line-height: 1.02; letter-spacing: -.045em; font-weight: 700; }
+  p { margin: 22px 0 0; color: #5d626d; font-size: 21px; line-height: 1.45; }
+  .foot { margin-top: 42px; display: flex; align-items: center; gap: 14px; color: #70757f; font-size: 16px; font-weight: 550; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #45a56a; }
+  .shot {
+    position: relative;
+    width: 570px;
+    height: 363px;
+    padding: 6px;
+    border: 1px solid #e6e2d9;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 30px 60px -30px rgb(24 22 16 / 35%);
+    overflow: hidden;
+  }
+  .shot img { width: 100%; height: auto; display: block; border: 1px solid #e6e2d9; border-radius: 10px; }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="dots"></div>
+  <div class="copy">
+    <div class="brand">
+      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="1" y="1" width="62" height="62" rx="14" fill="#f5f3ee" stroke="#e6e1d7"/>
+        <path d="M35 21h4a6 6 0 0 1 6 6v4" fill="none" stroke="#3b3f4a" stroke-width="5" stroke-linecap="round"/>
+        <rect x="15" y="13" width="23" height="12" rx="6" fill="#45a56a"/>
+        <rect x="38" y="28" width="16" height="16" rx="3" transform="rotate(45 46 36)" fill="#e2a63d"/>
+        <path d="M40 43h-6a5 5 0 0 0-5 5v1" fill="none" stroke="#3b3f4a" stroke-width="5" stroke-linecap="round"/>
+        <rect x="14" y="45" width="25" height="12" rx="6" fill="#575ad8"/>
+      </svg>
+      Flow Editor
+    </div>
+    <h1>Design apps<br>by talking.</h1>
+    <p>Describe an app, and an AI assistant draws its screens and flow charts.</p>
+    <div class="foot"><span class="dot"></span>oneo-me.github.io/nsgo-flow<span>·</span>Open source<span>·</span>MIT</div>
+  </div>
+  <div class="shot"><img src="../public/preview.png" alt=""></div>
+</body>
+</html>

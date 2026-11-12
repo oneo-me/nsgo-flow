@@ -11,6 +11,7 @@ A desktop app and flow designer built on [NSGo](https://github.com/nsgo-dev/nsgo
 ## Verification
 
 - Run `go tool nsgo check` and `go tool nsgo test`, never `go vet`, `go test` or `go build` directly.
+- Build the website from `website/` with `bun run build`; the Website workflow publishes it to GitHub Pages.
 - Do not run `go mod tidy`: it drops the requirements `nsgo check` needs for TSX type generation. Update NSGo with `go get github.com/nsgo-dev/nsgo@<version>`.
 
 ## Documentation
@@ -22,3 +23,4 @@ A desktop app and flow designer built on [NSGo](https://github.com/nsgo-dev/nsgo
 - Record completed user-visible outcomes as one-clause `Unreleased` bullets in [CHANGELOG.md](CHANGELOG.md), ordered by type and merging related ones.
 - Repair documents you touch instead of only appending to them.
 - Keep `README.md` and `README.zh-CN.md` equivalent; everything else, including code comments, is English.
+- Keep the website's English and Chinese words together in `website/src/copy.ts`.

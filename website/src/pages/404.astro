@@ -1,0 +1,29 @@
+---
+import Icon from '../components/Icon.astro';
+import Layout from '../layouts/Layout.astro';
+import Mark from '../components/Mark.astro';
+import { localePath, pageCopy } from '../site';
+
+const tr = pageCopy('en');
+const zh = pageCopy('zh');
+---
+
+<Layout lang="en" title={tr.notFound.title} description={tr.notFound.lead}
+  redirect={false}
+>
+  <section class="not-found wrap">
+    <Mark size={64} />
+    <h1>{tr.notFound.title}</h1>
+    <p class="lead-sm">{tr.notFound.lead}</p>
+    <p class="zh" lang="zh-CN">{zh.notFound.lead}</p>
+    <div class="not-found-actions">
+      <a class="btn btn--primary" href={localePath('en')}>
+        <Icon name="arrow-right" size={16} class="flip" />
+        {tr.notFound.home}
+      </a>
+      <a class="btn btn--secondary" href={localePath('zh')} lang="zh-CN">
+        {zh.notFound.home}
+      </a>
+    </div>
+  </section>
+</Layout>

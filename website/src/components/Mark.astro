@@ -1,0 +1,26 @@
+---
+// The app icon, redrawn as a vector: a green pill, an amber diamond and an
+// indigo pill joined by dark connectors.
+interface Props {
+  size?: number;
+  class?: string;
+  tile?: boolean;
+}
+const { size = 32, class: className, tile = true } = Astro.props;
+---
+
+<svg
+  class={className}
+  width={size}
+  height={size}
+  viewBox="0 0 64 64"
+  role="img"
+  aria-label="Flow Editor"
+>
+  {tile && <rect x="1" y="1" width="62" height="62" rx="14" fill="var(--mark-tile)" stroke="var(--mark-line)" />}
+  <path d="M35 21h4a6 6 0 0 1 6 6v4" fill="none" stroke="var(--mark-connector)" stroke-width="5" stroke-linecap="round" />
+  <rect x="15" y="13" width="23" height="12" rx="6" fill="var(--mark-green)" />
+  <rect x="38" y="28" width="16" height="16" rx="3" transform="rotate(45 46 36)" fill="var(--mark-amber)" />
+  <path d="M40 43h-6a5 5 0 0 0-5 5v1" fill="none" stroke="var(--mark-connector)" stroke-width="5" stroke-linecap="round" />
+  <rect x="14" y="45" width="25" height="12" rx="6" fill="var(--mark-indigo)" />
+</svg>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://oneo-me.github.io/nsgo-flow/sitemap.xml

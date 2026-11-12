@@ -1,0 +1,60 @@
+---
+import Icon from '../../components/Icon.astro';
+import Layout from '../../layouts/Layout.astro';
+import { links, localePath, pageCopy, langOf, langPaths } from '../../site';
+
+export function getStaticPaths() {
+  return langPaths();
+}
+
+const lang = langOf(Astro.params.lang);
+const tr = pageCopy(lang);
+const page = tr.privacyPage;
+const last = page.sections.length - 1;
+---
+
+<Layout
+  lang={lang}
+  path="privacy/"
+  title={tr.meta.privacyTitle}
+  description={tr.meta.privacyDescription}
+>
+  <header class="page-head">
+    <div class="wrap-narrow">
+      <p class="kicker">{tr.brand.name}</p>
+      <h1>{page.title}</h1>
+      <p class="lead-sm">{page.lead}</p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="wrap-narrow prose">
+      {page.sections.map((section, index) => (
+        <section>
+          <h2>{section.title}</h2>
+          {section.body.map((paragraph) => <p>{paragraph}</p>)}
+          {section.items.length > 0 && (
+            <ul>
+              {section.items.map((item) => <li>{item}</li>)}
+            </ul>
+          )}
+          {index === last && (
+            <p class="prose-issues">
+              <a href={links.issues} target="_blank" rel="noopener noreferrer">
+                github.com/oneo-me/nsgo-flow/issues
+                <Icon name="arrow-up-right" size={15} />
+              </a>
+            </p>
+          )}
+        </section>
+      ))}
+
+      <p class="prose-footer">
+        <a class="text-link" href={localePath(lang)}>
+          <Icon name="arrow-right" size={16} class="flip" />
+          {tr.actions.backHome}
+        </a>
+      </p>
+    </div>
+  </section>
+</Layout>

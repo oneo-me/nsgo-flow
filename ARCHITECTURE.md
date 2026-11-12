@@ -15,14 +15,18 @@ Flow Editor is a single-window [NSGo](https://github.com/nsgo-dev/nsgo) desktop 
 | `settings.go` | The provider and statistics settings. |
 | `stats.go` | The opt-out usage statistics. |
 | `locales/` | Messages in `en.yaml` and `zh-Hans.yaml`; `catalog_gen.go` is generated. |
+| `website/` | The official static site, in English and Simplified Chinese, deployed to GitHub Pages. |
 
 ## Boundaries
 
 - `flowfile` and `agent` never import NSGo, so the format and the model client stay testable on their own.
 - Every change to the document goes through the editor, which records it for undo. Tool calls of one assistant turn undo together.
-- A design is a draft drawn from a few primitives shaped by Tailwind CSS classes, not from ready-made controls, so the model can draw any look. Classes NSGo does not know go back to the model as a warning with the tool's result. A design lays out at its device's size on a plane the design canvas moves and scales, as the flow chart's camera does, since NSGo's zooming scroll views exist only on Apple platforms. Platforms hit-test views without that transform, so a layer over the design finds the element under the pointer from the elements' frames, as the flow chart finds its nodes. Elements are named by their paths, which the selection and `set_element` use.
+- A design is a draft drawn from a few primitives shaped by Tailwind CSS classes, not from ready-made controls, so the model can draw any look. Classes NSGo does not know go back to the model as a warning with the tool's result.
+- A design lays out at its device's size on a plane the design canvas moves and scales, as the flow chart's camera does, since NSGo's zooming scroll views exist only on Apple platforms.
+- Platforms hit-test views without that transform, so a layer over the design finds the element under the pointer from the elements' frames, as the flow chart finds its nodes. Elements are named by their paths, which the selection and `set_element` use.
 - The flow file names icons by their Lucide names, or older ones it maps to them, as `flowfile` cannot import NSGo. `tools/iconsgen`, run by `go generate` after updating NSGo, writes every name NSGo's Lucide package has into `flowfile` and the map from names to icons into the app.
-- One flow view follows the open flow of the document shown instead of remounting per flow or tab, and the design covers it while its tab is open, and fits the chart only once a change's batch is over: remounting a chart, or fitting it while it takes new data, trips NSGo's commit check on macOS.
+- One flow view follows the open flow of the document shown instead of remounting per flow or tab, and the design covers it while its tab is open.
+- The chart fits only once a change's batch is over: remounting a chart, or fitting it while it takes new data, trips NSGo's commit check on macOS.
 - Each document has its own conversation; a turn keeps editing the document it began on while another tab shows.
 - The assistant reads only the folder holding the open file, through an `os.Root` that symbolic links cannot leave, and the other open documents, which the app answers `get_project` with.
 - User-visible words live in `locales/`, in both languages.
