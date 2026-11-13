@@ -92,3 +92,13 @@ flowCount: "{count, plural, =0 {No flows} one {# flow} other {# flows}}"
 flowEmpty: Ask the assistant to draw a flow of this screen.
 design: Design
 designEmpty: This screen has no design yet. Ask the assistant to draw one.
+comment: Comment
+commentPlaceholder: What should change here?
+saveComment: Save
+removeComment: Remove Comment
+askAssistant: Ask Assistant
+resolveComment: "Resolve my comment on element {path}: {comment}"
+resolveComments: Ask the Assistant to Resolve Comments
+resolveCommentsPrompt: "{count, plural, one {Resolve my comment on this screen.} other {Resolve my # comments on this screen.}}"
+toolSetElement: Change element
+toolResolveComment: Resolve comment

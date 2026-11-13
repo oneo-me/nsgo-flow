@@ -15,6 +15,7 @@ const (
 	ToolAddScreen      = "add_screen"
 	ToolSetUI          = "set_ui"
 	ToolSetElement     = "set_element"
+	ToolResolveComment = "resolve_comment"
 	ToolRemoveScreen   = "remove_screen"
 	ToolAddFlow        = "add_flow"
 	ToolRemoveFlow     = "remove_flow"
@@ -101,6 +102,9 @@ func Tools() []Tool {
 			object([]string{"path", "ui"}, map[string]any{"screen": str("ID of the screen; the open one when omitted."),
 				"path": str("The element's path: its index among its siblings at each level from 0, joined by dots, such as 0.2.1."),
 				"ui":   str("The element lines that take its place, \"\" to remove it.")})},
+		{ToolResolveComment, "Remove the user's comment from an element once you have done what it asks, or the user agrees it needs nothing.",
+			object([]string{"path"}, map[string]any{"screen": str("ID of the screen; the open one when omitted."),
+				"path": str("The commented element's path.")})},
 		{ToolRemoveScreen, "Remove a screen with its interface and flows.",
 			object([]string{"id"}, map[string]any{"id": str("ID of the screen.")})},
 		{ToolAddFlow, "Add a flow chart to a screen and show it, such as what happens when a button is pressed, or retitle the flow with the same ID.",
@@ -158,7 +162,11 @@ func Apply(p flowfile.Project, at Location, name, arguments string) Result {
 	decode := func(v any) error { return json.Unmarshal([]byte(arguments), v) }
 	var show Location
 	ok := func(format string, args ...any) Result {
-		return Result{Project: d, Changed: true, Show: show, Output: fmt.Sprintf(format, args...)}
+		out := fmt.Sprintf(format, args...)
+		if name != ToolResolveComment && name != ToolRemoveScreen {
+			out += droppedComments(p, d)
+		}
+		return Result{Project: d, Changed: true, Show: show, Output: out}
 	}
 	// screen finds the screen with id, the open one when id is "".
 	screen := func(id string) (*flowfile.Screen, error) {
@@ -287,6 +295,10 @@ func Apply(p flowfile.Project, at Location, name, arguments string) Result {
 		if err != nil {
 			return fail("ui %v", err)
 		}
+		// An element rewritten as one keeps its comment until resolved.
+		if old, found := flowfile.ElementAt(s.UI, a.Path); found && len(with) == 1 && old.Attr("comment") != "" && with[0].Attr("comment") == "" {
+			with, _ = flowfile.SetComment(with, "0", old.Attr("comment"))
+		}
 		els, err := flowfile.ReplaceElement(s.UI, a.Path, with)
 		if err != nil {
 			return fail("%v", err)
@@ -297,6 +309,25 @@ func Apply(p flowfile.Project, at Location, name, arguments string) Result {
 			show.Element = a.Path
 		}
 		return ok("replaced element %s of screen %s with %d elements", a.Path, s.ID, len(with))
+	case ToolResolveComment:
+		var a struct{ Screen, Path string }
+		if err := decode(&a); err != nil {
+			return fail("%v", err)
+		}
+		s, err := screen(a.Screen)
+		if err != nil {
+			return fail("%v", err)
+		}
+		el, found := flowfile.ElementAt(s.UI, a.Path)
+		if !found {
+			return fail("no element at %s", a.Path)
+		}
+		if el.Attr("comment") == "" {
+			return fail("element %s of screen %s has no comment", a.Path, s.ID)
+		}
+		s.UI, _ = flowfile.SetComment(s.UI, a.Path, "")
+		show = Location{Screen: s.ID, Design: true, Element: a.Path}
+		return ok("resolved the comment on element %s of screen %s", a.Path, s.ID)
 	case ToolRemoveScreen:
 		var a struct{ ID string }
 		if err := decode(&a); err != nil {
@@ -533,6 +564,28 @@ func Apply(p flowfile.Project, at Location, name, arguments string) Result {
 	return fail("unknown tool %q", name)
 }
 
+// droppedComments tells the model of the user's comments that an edit
+// from before to after dropped without resolve_comment, as rewriting an
+// interface can.
+func droppedComments(before, after flowfile.Project) string {
+	kept := map[[2]string]int{}
+	for _, c := range after.Comments() {
+		kept[[2]string{c.Screen, c.Text}]++
+	}
+	var lost []string
+	for _, c := range before.Comments() {
+		if k := [2]string{c.Screen, c.Text}; kept[k] > 0 {
+			kept[k]--
+			continue
+		}
+		lost = append(lost, fmt.Sprintf("%q on element %s of screen %s", c.Text, c.Path, c.Screen))
+	}
+	if len(lost) == 0 {
+		return ""
+	}
+	return "\nwarning: this dropped the user's comments " + strings.Join(lost, ", ") + "; put each back with comment=\"…\" unless you have done what it asks"
+}
+
 // SystemPrompt tells the model its job and shows it the project as it
 // is, where the user is looking and what is selected, and the files
 // around it.
@@ -580,6 +633,8 @@ A design is drawn with a few primitives, an element a line, each styled with Tai
 	b.WriteString(`
 Element paths name an element by its index among its siblings at each level from 0, joined by dots: 1.0 is the first element the second top-level element holds.
 
+The user comments on elements to ask for changes: an element's comment="…" is the user's, not part of the design. Do what a comment asks, or discuss it when it is unclear, then remove it with resolve_comment and say what you did. Keep comments on the elements you rewrite until they are resolved, and never add one yourself.
+
 Draw any interface with them, as a designer draws in Figma: buttons, fields, switches, tabs, cards, lists, charts and navigation are boxes, texts, icons and SVG shaped by classes, with exactly the look the app needs. Make designs look like a finished product, with a clear hierarchy, consistent spacing and realistic content, not wireframes. Layout is flexbox: a box is a column unless flex-row, children stretch across it, flex-1 fills the rest, and absolute with top-*, left-*, right-* or bottom-* places a box over its parent, as a badge or a floating button. Classes cover sizes (w-*, h-*, size-*, w-full, w-1/2), spacing (p-*, gap-*, m-*), colors (bg-*, text-*, border-*, with /opacity such as bg-black/40, and any value as bg-[#0f172a]), the palette (zinc, slate, blue, amber, emerald, rose and the others, 50 to 950), corners (rounded-*, rounded-full), borders, shadows (shadow-sm to shadow-2xl), gradients (bg-linear-to-br from-indigo-500 to-pink-500), opacity, overflow-hidden, text (text-xs to text-6xl, font-medium, font-bold, leading-*, tracking-*, text-center, truncate, line-clamp-2, uppercase) and theme colors that follow light and dark mode (bg-background, text-foreground, bg-card, bg-primary, text-primary-foreground, bg-muted, text-muted-foreground, border-border). The screen is the device's size and clips what overflows; give the main box flex-1 to fill it, and draw the status bar, navigation bars and tab bars yourself where the app has them. set_ui replaces a screen's whole interface, so send all of it; set_element changes one part.
 
 An icon takes the name of any Lucide icon (lucide.dev), by its current name or an older one such as home or alert-circle; common ones are ` + strings.Join(flowfile.CommonIcons, ", ") + `. Draw a logo, a chart or an illustration with svg.
@@ -611,6 +666,12 @@ The current project:
 	if i := p.ScreenIndex(at.Screen); i >= 0 && at.Design && at.Element != "" {
 		if el, ok := flowfile.ElementAt(p.Screens[i].UI, at.Element); ok {
 			fmt.Fprintf(&b, "The user has selected element %s of the design:\n\n```\n%s```\n", at.Element, flowfile.FormatUI([]flowfile.Element{el}))
+		}
+	}
+	if comments := p.Comments(); len(comments) > 0 {
+		b.WriteString("\nThe user's open comments:\n")
+		for _, c := range comments {
+			fmt.Fprintf(&b, "- screen %s, element %s: %q\n", c.Screen, c.Path, c.Text)
 		}
 	}
 	if at.Node != "" || at.Element != "" {

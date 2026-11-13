@@ -78,7 +78,7 @@ func Root(cx *core.Scope) core.Node {
 		ui.ResizablePanelGroup{Style: ui.FillRest, HandleLabel: tr.Assistant(), Panels: []base.ResizablePanel{
 			{MinSize: 640, Children: []core.Node{core.View{Style: ui.FillRest, Children: []core.Node{
 				titleBar(cx, e),
-				core.View{Style: ui.FillRest.Merge(core.Style{Direction: core.Row}), Children: []core.Node{sidebar(cx, e), workspacePane(cx, e)}},
+				core.View{Style: ui.FillRest.Merge(core.Style{Direction: core.Row}), Children: []core.Node{sidebar(cx, e), workspacePane(cx, e, a)}},
 			}}}},
 			{Size: chatWidth.Get, OnResize: chatWidth.Set, MinSize: 320, MaxSize: 720, Children: []core.Node{assistantPane(cx, a)}},
 		}},

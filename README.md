@@ -30,7 +30,7 @@
 - Files remember where they were opened from or saved to, so ⌘S saves them in place, and reopen at the next start.
 - Phone, tablet and desktop designs are drawn from boxes, texts, icons, images and SVG shaped by Tailwind CSS classes, so a draft can look like anything; zoom, pan and select its elements as in the flow charts.
 - The assistant asks what it needs, then lays out interfaces and adds, links and rearranges nodes with tools.
-- The assistant works on what you select, can read your other open files, and reads the folder a file is saved in to chart how the code there works.
+- The assistant works on what you select, resolves the comments you leave on design elements, can read your other open files, and reads the folder a file is saved in to chart how the code there works.
 - Each assistant change undoes as one step.
 - Works with any OpenAI-compatible provider that supports tool calls, local servers included.
 - Designs are plain-text `.flow` files you can read, diff and edit by hand.

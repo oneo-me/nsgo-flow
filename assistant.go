@@ -133,10 +133,14 @@ func (a *assistant) stop() { a.e.shown().chat.stop() }
 
 // send asks the model about the draft.
 func (a *assistant) send() {
-	text := strings.TrimSpace(a.draft.GetUntracked())
-	if text == "" {
-		return
+	if text := strings.TrimSpace(a.draft.GetUntracked()); text != "" {
+		a.ask(text, func() { a.draft.Set("") })
 	}
+}
+
+// ask asks the model prompt about the document shown, stopping the turn
+// running, and runs sent once it is sent.
+func (a *assistant) ask(prompt string, sent func()) {
 	p := core.Untracked(a.cx, func() agent.Provider { return provider(a.cx) })
 	if !p.Ready() {
 		a.openSettings()
@@ -145,14 +149,14 @@ func (a *assistant) send() {
 	if a.e.empty() {
 		// A conversation is about a file: a new one is saved first.
 		a.e.newFile(func(d *document) {
-			a.draft.Set("")
-			a.run(d, p, text)
+			sent()
+			a.run(d, p, prompt)
 		})
 		return
 	}
 	a.stop()
-	a.draft.Set("")
-	a.run(a.e.shown(), p, text)
+	sent()
+	a.run(a.e.shown(), p, prompt)
 }
 
 // run starts a turn about d for prompt on a goroutine, which reaches the
@@ -389,6 +393,10 @@ func toolLook(tr locales.Messages, name string) (func() *core.SVG, string) {
 		return lucide.SquarePlus, tr.ToolAddScreen()
 	case agent.ToolSetUI:
 		return lucide.PanelsTopLeft, tr.ToolSetUI()
+	case agent.ToolSetElement:
+		return lucide.SquareMousePointer, tr.ToolSetElement()
+	case agent.ToolResolveComment:
+		return lucide.MessageSquareCheck, tr.ToolResolveComment()
 	case agent.ToolRemoveScreen:
 		return lucide.SquareMinus, tr.ToolRemoveScreen()
 	case agent.ToolAddFlow:
@@ -458,6 +466,8 @@ func callDetail(name, arguments string) string {
 		return cmp(a.Title, a.ID)
 	case agent.ToolSetUI:
 		return a.Screen
+	case agent.ToolSetElement, agent.ToolResolveComment:
+		return a.Path
 	case agent.ToolShow:
 		parts = slices.DeleteFunc([]string{a.Screen, a.Flow, a.Node}, func(s string) bool { return s == "" })
 	case agent.ToolListDir, agent.ToolReadFile:

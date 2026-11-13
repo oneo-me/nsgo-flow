@@ -70,8 +70,13 @@ var Elements = []ElementSpec{
 	{Kind: "svg", Doc: "any drawing, such as a chart, a logo or an illustration: its text is an SVG document, quoted with single quotes inside, sized by its class or else its viewBox"},
 }
 
+// commonAttrs are the attributes every element takes: the classes that
+// shape it, and a user's comment on it, which asks the assistant for a
+// change until the assistant resolves it.
+var commonAttrs = []string{"class", "comment"}
+
 // attrOrder is the order Format writes attributes in.
-var attrOrder = []string{"src", "class"}
+var attrOrder = []string{"src", "class", "comment"}
 
 // Spec returns the spec of the element kind.
 func Spec(kind string) (ElementSpec, bool) {
@@ -128,8 +133,8 @@ func (r *uiReader) line(toks []token) string {
 			el.Text = t.text
 		case !isAttr:
 			return fmt.Sprintf("unexpected %q; quote text with spaces, and write attributes as key=value", t.text)
-		case key != "class" && !slices.Contains(spec.Attrs, key):
-			return fmt.Sprintf("%s takes no attribute %q; use %s", spec.Kind, key, strings.Join(append(slices.Clone(spec.Attrs), "class"), ", "))
+		case !slices.Contains(commonAttrs, key) && !slices.Contains(spec.Attrs, key):
+			return fmt.Sprintf("%s takes no attribute %q; use %s", spec.Kind, key, strings.Join(slices.Concat(spec.Attrs, commonAttrs), ", "))
 		default:
 			if el.Attrs == nil {
 				el.Attrs = map[string]string{}

@@ -100,7 +100,7 @@ func sidebar(cx *core.Scope, e *editor) core.Node {
 
 // workspacePane is the entry the sidebar opened: a screen's design, or a
 // flow chart; or, while no file is open, a way to make or open one.
-func workspacePane(cx *core.Scope, e *editor) core.Node {
+func workspacePane(cx *core.Scope, e *editor, a *assistant) core.Node {
 	tr := locales.For(cx)
 	colors := ui.ColorsOf(cx)
 	message := func(icon func() *core.SVG, text string, actions ...core.Node) core.Node {
@@ -118,7 +118,7 @@ func workspacePane(cx *core.Scope, e *editor) core.Node {
 		flowPane(cx, e),
 		core.Show{When: func() bool { return e.cur().design.Get() }, Then: func(cx *core.Scope) core.Node {
 			return core.View{Style: core.Style{Position: core.Absolute, Left: core.Pt(0), Top: core.Pt(0), Right: core.Pt(0), Bottom: core.Pt(0)},
-				Children: []core.Node{designPane(cx, e)}}
+				Children: []core.Node{designPane(cx, e, func(prompt string) { a.ask(prompt, func() {}) })}}
 		}},
 	}}
 	return core.View{Style: ui.FillRest, StyleFunc: ui.Filled(colors.Background), Children: []core.Node{

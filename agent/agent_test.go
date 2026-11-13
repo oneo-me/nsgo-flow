@@ -235,3 +235,27 @@ func TestSetElement(t *testing.T) {
 		t.Fatalf("the prompt does not show the selection:\n%s", prompt)
 	}
 }
+
+func TestComments(t *testing.T) {
+	p, _ := flowfile.ParseProject("screen a\n  box\n    text \"old\" comment=\"Say hello\"\n  end\n")
+	at := Location{Screen: "a", Design: true}
+	if prompt := SystemPrompt(p, at, Context{}); !strings.Contains(prompt, `screen a, element 0.0: "Say hello"`) {
+		t.Fatalf("the prompt does not list the comment:\n%s", prompt)
+	}
+	// An element rewritten as one keeps its comment.
+	r := Apply(p, at, ToolSetElement, `{"path":"0.0","ui":"text \"Hello\""}`)
+	if r.Failed || !strings.Contains(r.Project.Format(), `text "Hello" comment="Say hello"`) || strings.Contains(r.Output, "warning") {
+		t.Fatalf("set_element: %+v", r)
+	}
+	// Rewriting the interface without it warns of it.
+	if r := Apply(p, at, ToolSetUI, `{"ui":"text \"Hello\""}`); !strings.Contains(r.Output, `warning: this dropped the user's comments "Say hello" on element 0.0 of screen a`) {
+		t.Fatalf("set_ui: %q", r.Output)
+	}
+	r = Apply(r.Project, at, ToolResolveComment, `{"path":"0.0"}`)
+	if r.Failed || strings.Contains(r.Project.Format(), "comment") || r.Show.Element != "0.0" {
+		t.Fatalf("resolve_comment: %+v", r)
+	}
+	if r := Apply(r.Project, at, ToolResolveComment, `{"path":"0.0"}`); !r.Failed {
+		t.Fatalf("resolved an element without a comment: %+v", r)
+	}
+}

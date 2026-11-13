@@ -33,7 +33,10 @@ type designCanvas struct {
 	cam        struct{ x, y, zoom float64 }
 	// zoomed is where the camera's zoom is going, for what keeps its
 	// width on screen at any zoom.
-	zoomed             *core.Signal[float64]
+	zoomed *core.Signal[float64]
+	// view is where the camera is going, x, y and zoom, for what is drawn
+	// over the design at a point of it.
+	view               *core.Signal[[3]float64]
 	width, height      float64
 	contentW, contentH float64
 	moved              bool
@@ -46,7 +49,7 @@ type designCanvas struct {
 
 func newDesignCanvas(cx *core.Scope) *designCanvas {
 	c := &designCanvas{cx: cx, x: core.NewAnimatedValue(cx, 0), y: core.NewAnimatedValue(cx, 0), zoom: core.NewAnimatedValue(cx, 1),
-		zoomed: core.NewSignal(cx, 1.0)}
+		zoomed: core.NewSignal(cx, 1.0), view: core.NewSignal(cx, [3]float64{0, 0, 1})}
 	c.cam.zoom = 1
 	return c
 }
@@ -55,6 +58,7 @@ func newDesignCanvas(cx *core.Scope) *designCanvas {
 func (c *designCanvas) move(x, y, zoom float64, animated bool) {
 	c.cam.x, c.cam.y, c.cam.zoom = x, y, zoom
 	c.zoomed.Set(zoom)
+	c.view.Set([3]float64{x, y, zoom})
 	if c.run != nil {
 		c.run.Stop()
 	}
@@ -87,6 +91,13 @@ func (c *designCanvas) zoomAt(x, y, factor float64, animated bool) {
 }
 
 func (c *designCanvas) zoomBy(factor float64) { c.zoomAt(c.width/2, c.height/2, factor, true) }
+
+// toView is the point of the view over a point of the design, where the
+// camera is going.
+func (c *designCanvas) toView(p core.Point) core.Point {
+	v := c.view.Get()
+	return core.Point{X: core.Points(v[0] + float64(p.X)*v[2]), Y: core.Points(v[1] + float64(p.Y)*v[2])}
+}
 
 // toDesign is the point of the design under a point of the view.
 func (c *designCanvas) toDesign(p core.Point) core.Point {
@@ -149,8 +160,11 @@ func (c *designCanvas) wheel(e core.WheelEvent) {
 // under it itself, as the camera's transform moves the design where the
 // platforms' hit testing does not follow: an outline marks the element
 // the pointer is over, pressing selects it, and pressing around it clears
-// the selection.
-func designPane(cx *core.Scope, e *editor) core.Node {
+// the selection. Pins mark the elements the user commented on, a card
+// beside where the pointer selected an element, or else beside the
+// element, edits its comment, and ask sends the assistant a prompt about
+// them.
+func designPane(cx *core.Scope, e *editor, ask func(prompt string)) core.Node {
 	tr := locales.For(cx)
 	colors := ui.ColorsOf(cx)
 	fin := ui.FinOf(cx)
@@ -166,6 +180,13 @@ func designPane(cx *core.Scope, e *editor) core.Node {
 		cx.Post(func() { c.fit(false) })
 	})
 	hovered := core.NewSignal(cx, "")
+	// clicked is the element the pointer last selected and where, in the
+	// design's coordinates.
+	type click struct {
+		path string
+		at   core.Point
+	}
+	clicked := core.NewSignal(cx, click{})
 	sel := selection{
 		selected: func() string { return e.cur().element.Get() },
 		choose: func(path string) {
@@ -227,8 +248,40 @@ func designPane(cx *core.Scope, e *editor) core.Node {
 			TransformOrigin: core.ObjectPosition{X: core.PositionAxis{Offset: core.Pt(0)}, Y: core.PositionAxis{Offset: core.Pt(0)}},
 			Animated:        &core.AnimatedStyle{TranslateX: c.x, TranslateY: c.y, Scale: c.zoom}},
 			OnLayout: c.measured,
-			Children: []core.Node{screenView(cx, s, sel), hover, selected}}
+			Children: append(append([]core.Node{screenView(cx, s, sel)}, commentPins(cx, s, sel, c.zoomed.Get)...), hover, selected)}
 	})
+	// comments counts the open screen's comments.
+	comments := func() int {
+		s, _ := e.cur().openScreen()
+		return len((flowfile.Project{Screens: []flowfile.Screen{s}}).Comments())
+	}
+	// anchor is the point of the view the comment card opens beside.
+	anchor := func() (core.Point, bool) {
+		path := sel.selected()
+		if k := clicked.Get(); k.path == path {
+			return c.toView(k.at), true
+		}
+		sel.laidOut.Get()
+		b, ok := sel.bounds(path)
+		return c.toView(core.Point{X: b.Origin.X + b.Size.Width, Y: b.Origin.Y}), ok
+	}
+	// place keeps a card of size beside the anchor and inside the view.
+	place := func(size core.Size) (core.Point, bool) {
+		p, ok := anchor()
+		if !ok {
+			return core.Point{}, false
+		}
+		const gap, margin = 12, 8
+		w, h := core.Points(c.width), core.Points(c.height)
+		x, y := p.X+gap, p.Y+gap
+		if x+size.Width > w-margin {
+			x = p.X - gap - size.Width
+		}
+		if y+size.Height > h-margin {
+			y = p.Y - gap - size.Height
+		}
+		return core.Point{X: max(margin, min(x, w-margin-size.Width)), Y: max(margin, min(y, h-margin-size.Height))}, true
+	}
 	tool := func(icon func() *core.SVG, label string, press func(), testID string) core.Node {
 		return ui.IconButton{Icon: icon, Label: label, OnPress: press, TestID: testID}
 	}
@@ -241,10 +294,17 @@ func designPane(cx *core.Scope, e *editor) core.Node {
 			tool(lucide.ZoomOut, tr.ZoomOut(), func() { c.zoomBy(1 / designZoomStep) }, "design-zoom-out"),
 			tool(lucide.ZoomIn, tr.ZoomIn(), func() { c.zoomBy(designZoomStep) }, "design-zoom-in"),
 			tool(lucide.Scan, tr.Fit(), func() { c.fit(true) }, "design-fit"),
+			core.Show{When: func() bool { return comments() > 0 }, Then: func(*core.Scope) core.Node {
+				return tool(lucide.MessagesSquare, tr.ResolveComments(), func() { ask(tr.ResolveCommentsPrompt(core.Untracked(cx, comments))) }, "resolve-comments")
+			}},
 		}}
 	pointer := core.View{TestID: "design-pointer", NoFocus: true, ImportantForAccessibility: core.ImportantNo,
-		Style:   core.Style{Position: core.Absolute, Left: core.Pt(0), Top: core.Pt(0), Right: core.Pt(0), Bottom: core.Pt(0)},
-		OnPress: func(ev core.PressEvent) { sel.choose(elementAt(ev.Position)) },
+		Style: core.Style{Position: core.Absolute, Left: core.Pt(0), Top: core.Pt(0), Right: core.Pt(0), Bottom: core.Pt(0)},
+		OnPress: func(ev core.PressEvent) {
+			path := elementAt(ev.Position)
+			clicked.Set(click{path, c.toDesign(ev.Position)})
+			sel.choose(path)
+		},
 		OnMouseMove: func(ev core.MouseEvent) {
 			path := ""
 			if ev.PressedButton == core.MouseButtonNone {
@@ -277,5 +337,7 @@ func designPane(cx *core.Scope, e *editor) core.Node {
 	}
 	return core.View{Style: ui.FillRest.Merge(core.Style{Overflow: core.Hidden}), StyleFunc: ui.Filled(colors.Inset), NoFocus: true,
 		OnLayout: c.resize,
-		Children: []core.Node{picture, pointer, toolbar}}
+		Children: []core.Node{picture, pointer, toolbar,
+			core.Show{When: func() bool { return e.cur().element.Get() != "" }, Then: func(cx *core.Scope) core.Node { return commentCard(cx, e, ask, place) }},
+		}}
 }

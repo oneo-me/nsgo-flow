@@ -90,3 +90,13 @@ flowCount: "{count, plural, =0 {无流程} other {# 个流程}}"
 flowEmpty: 让助手为这个界面画一个流程。
 design: 设计
 designEmpty: 这个界面还没有设计，让助手画一个吧。
+comment: 评论
+commentPlaceholder: 这里需要怎么改？
+saveComment: 保存
+removeComment: 删除评论
+askAssistant: 问助手
+resolveComment: "处理我在元素 {path} 上的评论：{comment}"
+resolveComments: 让助手处理评论
+resolveCommentsPrompt: "处理我在这个界面上的 {count, number} 条评论。"
+toolSetElement: 修改元素
+toolResolveComment: 处理评论

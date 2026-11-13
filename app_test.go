@@ -203,6 +203,16 @@ func TestDesignSelectsWhatThePointerIsOver(t *testing.T) {
 		t.Fatalf("pressing the icon selected %q", got)
 	}
 	app.WaitFor("id:design-selected", time.Second)
+	// The comment card opens beside where the pointer pressed, and typing
+	// in it keeps the element selected.
+	card, pressed := app.Find("id:comment-card").Frame, at("0.1.0")
+	if dx, dy := card.Origin.X-pressed.X, card.Origin.Y-pressed.Y; dx < 0 || dx > 20 || dy < 0 || dy > 20 {
+		t.Fatalf("the card is at %v, pressed at %v", card.Origin, pressed)
+	}
+	app.Type("id:comment-input", "Bigger")
+	if got := e.cur().element.GetUntracked(); got != "0.1.0" || !app.Exists("id:comment-card") {
+		t.Fatalf("typing in the card selected %q", got)
+	}
 	app.HoverAt("id:design-pointer", at("0.0"))
 	app.PressAt("id:design-pointer", at("0.0"))
 	if got := e.cur().element.GetUntracked(); got != "0.0" {
@@ -409,11 +419,11 @@ func TestAssistantKnowsTheFilesAndReadsTheFolder(t *testing.T) {
 func TestAssistantDesignsScreensWithFlows(t *testing.T) {
 	ui := `box class=\\\"flex-1 gap-4 p-6 bg-nope\\\"\\ntext \\\"Continue\\\" class=\\\"font-bold\\\"\\nicon mail class=\\\"size-5\\\"\\nend`
 	url, bodies := recorder(t,
-		deltas(`{"tool_calls":[` +
-			`{"index":0,"id":"c1","function":{"name":"add_screen","arguments":"{\"id\":\"signin\",\"title\":\"Sign in\",\"ui\":\"` + ui + `\"}"}},` +
-			`{"index":1,"id":"c2","function":{"name":"add_flow","arguments":"{\"id\":\"login\",\"title\":\"Log in\"}"}},` +
-			`{"index":2,"id":"c3","function":{"name":"add_nodes","arguments":"{\"nodes\":[{\"id\":\"tap\",\"label\":\"Tap Continue\",\"kind\":\"start\"}]}"}},` +
-			`{"index":3,"id":"c4","function":{"name":"add_flow","arguments":"{\"id\":\"reset\",\"title\":\"Reset password\"}"}},` +
+		deltas(`{"tool_calls":[`+
+			`{"index":0,"id":"c1","function":{"name":"add_screen","arguments":"{\"id\":\"signin\",\"title\":\"Sign in\",\"ui\":\"`+ui+`\"}"}},`+
+			`{"index":1,"id":"c2","function":{"name":"add_flow","arguments":"{\"id\":\"login\",\"title\":\"Log in\"}"}},`+
+			`{"index":2,"id":"c3","function":{"name":"add_nodes","arguments":"{\"nodes\":[{\"id\":\"tap\",\"label\":\"Tap Continue\",\"kind\":\"start\"}]}"}},`+
+			`{"index":3,"id":"c4","function":{"name":"add_flow","arguments":"{\"id\":\"reset\",\"title\":\"Reset password\"}"}},`+
 			`{"index":4,"id":"c5","function":{"name":"add_nodes","arguments":"{\"nodes\":[{\"id\":\"mail\",\"label\":\"Send reset mail\"}]}"}}]}`),
 		deltas(`{"content":"I drew the sign-in screen."}`),
 		deltas(`{"content":"Made it bold."}`),
@@ -443,6 +453,55 @@ func TestAssistantDesignsScreensWithFlows(t *testing.T) {
 	app.WaitFor("text:Made it bold.", 5*time.Second)
 	if got := bodies()[2]; !strings.Contains(got, "selected element 0.0") {
 		t.Fatalf("the model was not told of the selection:\n%s", got)
+	}
+}
+
+func TestCommentsAskTheAssistant(t *testing.T) {
+	url, bodies := recorder(t,
+		deltas(`{"tool_calls":[{"index":0,"id":"c1","function":{"name":"set_element","arguments":"{\"path\":\"0.0\",\"ui\":\"text \\\"Hello there\\\" class=\\\"font-bold\\\"\"}"}},`+
+			`{"index":1,"id":"c2","function":{"name":"resolve_comment","arguments":"{\"path\":\"0.0\"}"}}]}`),
+		deltas(`{"content":"Made it friendlier."}`),
+	)
+	path := writeFlow(t, "shop.flow", "screen home \"Home\"\n  box class=\"flex-1 gap-4 p-6\"\n    text \"Welcome\"\n    text \"Mail\" comment=\"Smaller\"\n  end\n")
+	app, e := startEditor(t, nsgotest.Storage(map[string]string{keyBaseURL: url, keyModel: "test-model"}))
+	app.Post(func() {
+		if err := e.openPath(path); err != nil {
+			t.Error(err)
+		}
+	})
+	app.WaitFor("design >> text:Welcome", time.Second)
+	app.Find("id:comment-pin-0.1")
+	app.Find("id:resolve-comments")
+	if app.Exists("id:comment-card") {
+		t.Fatal("a comment card shows with nothing selected")
+	}
+
+	// Commenting on the selected element saves the comment in the file.
+	app.Press("id:element-0.0")
+	app.WaitFor("id:comment-card", time.Second)
+	app.Type("id:comment-input", "Friendlier")
+	app.Press("id:comment-save")
+	app.WaitFor("id:comment-pin-0.0", time.Second)
+	if got := e.shown().doc.GetUntracked().Format(); !strings.Contains(got, `text "Welcome" comment="Friendlier"`) {
+		t.Fatalf("the comment was not saved:\n%s", got)
+	}
+	app.Press("id:comment-remove")
+	app.WaitForGone("id:comment-pin-0.0", time.Second)
+	app.Type("id:comment-input", "Friendlier")
+
+	// Asking the assistant sends it the comment, which it resolves.
+	app.Press("id:comment-ask")
+	app.WaitFor("text:Made it friendlier.", 5*time.Second)
+	if got := bodies()[0]; !strings.Contains(got, "Resolve my comment on element 0.0: Friendlier") || !strings.Contains(got, `element 0.0: \"Friendlier\"`) {
+		t.Fatalf("the model was not told of the comment:\n%s", got)
+	}
+	got := e.shown().doc.GetUntracked().Format()
+	if !strings.Contains(got, `text "Hello there" class="font-bold"`+"\n") || !strings.Contains(got, `comment="Smaller"`) {
+		t.Fatalf("the comment was not resolved, or the other one went:\n%s", got)
+	}
+	app.WaitForGone("id:comment-pin-0.0", time.Second)
+	if app.Exists("id:comment-remove") {
+		t.Fatal("the card still shows the resolved comment")
 	}
 }
 

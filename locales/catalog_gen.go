@@ -38,15 +38,17 @@ func For(cx *core.Scope) Messages { return In(i18n.Language(cx)) }
 // its method, for the TSX declarations of the messages
 // (tsx.RegisterMessages).
 var Parameters = map[string][]string{
-	"DiagramLabel": {"nodes", "edges"},
-	"OpenFailed":   {"error_"},
-	"SaveFailed":   {"error_"},
-	"SaveChanges":  {"name"},
-	"Worked":       {"seconds"},
-	"Working":      {"seconds"},
-	"RanTools":     {"count"},
-	"ScreenCount":  {"count"},
-	"FlowCount":    {"count"},
+	"DiagramLabel":          {"nodes", "edges"},
+	"OpenFailed":            {"error_"},
+	"SaveFailed":            {"error_"},
+	"SaveChanges":           {"name"},
+	"Worked":                {"seconds"},
+	"Working":               {"seconds"},
+	"RanTools":              {"count"},
+	"ScreenCount":           {"count"},
+	"FlowCount":             {"count"},
+	"ResolveComment":        {"path", "comment"},
+	"ResolveCommentsPrompt": {"count"},
 }
 
 // Translation is a language's messages another package supplies:
@@ -54,16 +56,18 @@ var Parameters = map[string][]string{
 // of the others; a key or a field left out leaves the message to the
 // catalog.
 type Translation struct {
-	Texts        map[string]string
-	DiagramLabel func(nodes int, edges int) string
-	OpenFailed   func(error_ string) string
-	SaveFailed   func(error_ string) string
-	SaveChanges  func(name string) string
-	Worked       func(seconds int) string
-	Working      func(seconds int) string
-	RanTools     func(count int) string
-	ScreenCount  func(count int) string
-	FlowCount    func(count int) string
+	Texts                 map[string]string
+	DiagramLabel          func(nodes int, edges int) string
+	OpenFailed            func(error_ string) string
+	SaveFailed            func(error_ string) string
+	SaveChanges           func(name string) string
+	Worked                func(seconds int) string
+	Working               func(seconds int) string
+	RanTools              func(count int) string
+	ScreenCount           func(count int) string
+	FlowCount             func(count int) string
+	ResolveComment        func(path string, comment string) string
+	ResolveCommentsPrompt func(count int) string
 }
 
 var supplied = map[string]Translation{}
@@ -153,6 +157,14 @@ const (
 	textFlowEmpty
 	textDesign
 	textDesignEmpty
+	textComment
+	textCommentPlaceholder
+	textSaveComment
+	textRemoveComment
+	textAskAssistant
+	textResolveComments
+	textToolSetElement
+	textToolResolveComment
 	numTexts
 )
 
@@ -242,6 +254,14 @@ var keyOfText = [numTexts]string{
 	"flowEmpty",
 	"design",
 	"designEmpty",
+	"comment",
+	"commentPlaceholder",
+	"saveComment",
+	"removeComment",
+	"askAssistant",
+	"resolveComments",
+	"toolSetElement",
+	"toolResolveComment",
 }
 
 // textsEn are the messages without arguments in en.
@@ -328,7 +348,15 @@ var textsEn = i18n.NewTexts(""+
 	"Flows"+
 	"Ask the assistant to draw a flow of this screen."+
 	"Design"+
-	"This screen has no design yet. Ask the assistant to draw one.",
+	"This screen has no design yet. Ask the assistant to draw one."+
+	"Comment"+
+	"What should change here?"+
+	"Save"+
+	"Remove Comment"+
+	"Ask Assistant"+
+	"Ask the Assistant to Resolve Comments"+
+	"Change element"+
+	"Resolve comment",
 	[]uint16{
 		11,
 		8,
@@ -413,6 +441,14 @@ var textsEn = i18n.NewTexts(""+
 		48,
 		6,
 		61,
+		7,
+		24,
+		4,
+		14,
+		13,
+		37,
+		14,
+		15,
 	})
 
 // textsZhHans are the messages without arguments in zh-Hans.
@@ -499,7 +535,15 @@ var textsZhHans = i18n.NewTexts(""+
 	"流程"+
 	"让助手为这个界面画一个流程。"+
 	"设计"+
-	"这个界面还没有设计，让助手画一个吧。",
+	"这个界面还没有设计，让助手画一个吧。"+
+	"评论"+
+	"这里需要怎么改？"+
+	"保存"+
+	"删除评论"+
+	"问助手"+
+	"让助手处理评论"+
+	"修改元素"+
+	"处理评论",
 	[]uint16{
 		15,
 		9,
@@ -584,6 +628,14 @@ var textsZhHans = i18n.NewTexts(""+
 		42,
 		6,
 		54,
+		6,
+		24,
+		6,
+		12,
+		9,
+		21,
+		12,
+		12,
 	})
 
 // texts returns the messages without arguments in lang, nil for a
@@ -666,6 +718,12 @@ func Supply(lang string, t Translation) {
 	}
 	if t.FlowCount != nil {
 		s.FlowCount = t.FlowCount
+	}
+	if t.ResolveComment != nil {
+		s.ResolveComment = t.ResolveComment
+	}
+	if t.ResolveCommentsPrompt != nil {
+		s.ResolveCommentsPrompt = t.ResolveCommentsPrompt
 	}
 	supplied[lang] = s
 	Catalog.Add(lang)
@@ -1527,3 +1585,116 @@ func DesignEmpty(cx *core.Scope) string { return For(cx).DesignEmpty() }
 
 // DesignEmpty is the package's DesignEmpty in the language of msgs.
 func (msgs Messages) DesignEmpty() string { return msgs.text(textDesignEmpty) }
+
+// Comment says "Comment"
+// in the language the app shows under cx.
+func Comment(cx *core.Scope) string { return For(cx).Comment() }
+
+// Comment is the package's Comment in the language of msgs.
+func (msgs Messages) Comment() string { return msgs.text(textComment) }
+
+// CommentPlaceholder says "What should change here?"
+// in the language the app shows under cx.
+func CommentPlaceholder(cx *core.Scope) string { return For(cx).CommentPlaceholder() }
+
+// CommentPlaceholder is the package's CommentPlaceholder in the language of msgs.
+func (msgs Messages) CommentPlaceholder() string { return msgs.text(textCommentPlaceholder) }
+
+// SaveComment says "Save"
+// in the language the app shows under cx.
+func SaveComment(cx *core.Scope) string { return For(cx).SaveComment() }
+
+// SaveComment is the package's SaveComment in the language of msgs.
+func (msgs Messages) SaveComment() string { return msgs.text(textSaveComment) }
+
+// RemoveComment says "Remove Comment"
+// in the language the app shows under cx.
+func RemoveComment(cx *core.Scope) string { return For(cx).RemoveComment() }
+
+// RemoveComment is the package's RemoveComment in the language of msgs.
+func (msgs Messages) RemoveComment() string { return msgs.text(textRemoveComment) }
+
+// AskAssistant says "Ask Assistant"
+// in the language the app shows under cx.
+func AskAssistant(cx *core.Scope) string { return For(cx).AskAssistant() }
+
+// AskAssistant is the package's AskAssistant in the language of msgs.
+func (msgs Messages) AskAssistant() string { return msgs.text(textAskAssistant) }
+
+// ResolveComment says "Resolve my comment on element {path}: {comment}"
+// in the language the app shows under cx.
+func ResolveComment(cx *core.Scope, path string, comment string) string {
+	return For(cx).ResolveComment(path, comment)
+}
+
+// ResolveComment is the package's ResolveComment in the language of msgs.
+func (msgs Messages) ResolveComment(path string, comment string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.ResolveComment(path, comment))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].ResolveComment; f != nil {
+			return f(path, comment)
+		}
+		switch lang {
+		case "", "en":
+			return "Resolve my comment on element " + msgs.arg(path) + ": " + msgs.arg(comment)
+		case "zh-Hans":
+			return "处理我在元素 " + path + " 上的评论：" + comment
+		}
+	}
+}
+
+// ResolveComments says "Ask the Assistant to Resolve Comments"
+// in the language the app shows under cx.
+func ResolveComments(cx *core.Scope) string { return For(cx).ResolveComments() }
+
+// ResolveComments is the package's ResolveComments in the language of msgs.
+func (msgs Messages) ResolveComments() string { return msgs.text(textResolveComments) }
+
+// ResolveCommentsPrompt says "{count, plural, one {Resolve my comment on this screen.} other {Resolve my # comments on this screen.}}"
+// in the language the app shows under cx.
+func ResolveCommentsPrompt(cx *core.Scope, count int) string {
+	return For(cx).ResolveCommentsPrompt(count)
+}
+
+// ResolveCommentsPrompt is the package's ResolveCommentsPrompt in the language of msgs.
+func (msgs Messages) ResolveCommentsPrompt(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.ResolveCommentsPrompt(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].ResolveCommentsPrompt; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			var b strings.Builder
+			switch i18n.Cardinal("en", float64(count)) {
+			case i18n.One:
+				b.WriteString("Resolve my comment on this screen.")
+			default:
+				b.WriteString("Resolve my ")
+				b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(count))))
+				b.WriteString(" comments on this screen.")
+			}
+			return b.String()
+		case "zh-Hans":
+			return "处理我在这个界面上的 " + i18n.FormatNumber("zh-Hans", float64(count)) + " 条评论。"
+		}
+	}
+}
+
+// ToolSetElement says "Change element"
+// in the language the app shows under cx.
+func ToolSetElement(cx *core.Scope) string { return For(cx).ToolSetElement() }
+
+// ToolSetElement is the package's ToolSetElement in the language of msgs.
+func (msgs Messages) ToolSetElement() string { return msgs.text(textToolSetElement) }
+
+// ToolResolveComment says "Resolve comment"
+// in the language the app shows under cx.
+func ToolResolveComment(cx *core.Scope) string { return For(cx).ToolResolveComment() }
+
+// ToolResolveComment is the package's ToolResolveComment in the language of msgs.
+func (msgs Messages) ToolResolveComment() string { return msgs.text(textToolResolveComment) }

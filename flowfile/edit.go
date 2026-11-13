@@ -2,6 +2,7 @@ package flowfile
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -205,4 +206,46 @@ func ReplaceElement(els []Element, path string, with []Element) ([]Element, erro
 		return nil, fmt.Errorf("no element at %s", path)
 	}
 	return out, nil
+}
+
+// Comment is a user's comment on an element of a screen's interface.
+type Comment struct{ Screen, Path, Text string }
+
+// Comments are the comments on p's interfaces, screen by screen and in
+// the order their elements are written.
+func (p Project) Comments() []Comment {
+	var out []Comment
+	var walk func(screen string, els []Element, parent []int)
+	walk = func(screen string, els []Element, parent []int) {
+		for i, el := range els {
+			path := append(slices.Clone(parent), i)
+			if text := el.Attr("comment"); text != "" {
+				out = append(out, Comment{screen, FormatPath(path), text})
+			}
+			walk(screen, el.Children, path)
+		}
+	}
+	for _, s := range p.Screens {
+		walk(s.ID, s.UI, nil)
+	}
+	return out
+}
+
+// SetComment returns els with the comment on the element at path set to
+// text, or removed when text is ""; els is unchanged.
+func SetComment(els []Element, path, text string) ([]Element, error) {
+	el, ok := ElementAt(els, path)
+	if !ok {
+		return nil, fmt.Errorf("no element at %s", path)
+	}
+	el.Attrs = maps.Clone(el.Attrs)
+	if text == "" {
+		delete(el.Attrs, "comment")
+	} else {
+		if el.Attrs == nil {
+			el.Attrs = map[string]string{}
+		}
+		el.Attrs["comment"] = text
+	}
+	return ReplaceElement(els, path, []Element{el})
 }

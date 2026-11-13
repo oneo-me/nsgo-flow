@@ -5,7 +5,7 @@
 - Add a flow chart editor with an AI assistant that draws the chart through tool calls.
 - Add app screens with phone, tablet or desktop designs drawn from Tailwind-shaped primitives, listed beside their flow charts.
 - Add support for any OpenAI-compatible provider with tool calls, local servers included.
-- Add an assistant that works on the selection, reads the other open files and reads the file's folder to chart its code.
+- Add an assistant that works on the selection, resolves and removes the comments users leave on design elements, reads the other open files and reads the file's folder to chart its code.
 - Add plain-text `.flow` files with a multi-screen example, opened in tabs beside a full-height assistant.
 - Open flow files from the Finder on macOS or the command line, save them in place, and reopen them at the next start.
 - Ask to save unsaved changes before a tab or the window drops them.

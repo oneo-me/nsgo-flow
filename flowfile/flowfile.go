@@ -7,7 +7,7 @@
 //
 //	screen signin "Sign in" device=phone   # or tablet, desktop
 //	  box class="flex-1 gap-4 p-6"
-//	    text "Welcome back" class="text-2xl font-bold"
+//	    text "Welcome back" class="text-2xl font-bold" comment="Friendlier"
 //	    box class="flex-row items-center gap-2 rounded-xl border border-border px-3 h-11"
 //	      icon mail class="size-4 text-muted-foreground"
 //	      text "you@example.com" class="text-muted-foreground"
@@ -32,13 +32,15 @@
 // A screen's interface comes before its flows: one element a line, and a
 // box holds the lines up to its end. The interface is a few primitives,
 // listed in Elements, each shaped by Tailwind CSS classes, so a design can
-// look like anything rather than like the controls of one toolkit. Screen
+// look like anything rather than like the controls of one toolkit. Any
+// element may carry a comment, a change the user asks the assistant for,
+// which stays until the assistant resolves it. Screen
 // and flow IDs are unique in the file. An edge may name nodes no line
 // declares; they take their ID as their label.
 //
 // A file without screens is a single flow, which reads as screen main
 // with flow main. Format writes a project back in the canonical form,
-// without the comments.
+// without the # comments.
 package flowfile
 
 import (

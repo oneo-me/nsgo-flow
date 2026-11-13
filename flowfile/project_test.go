@@ -1,6 +1,7 @@
 package flowfile
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -118,6 +119,33 @@ func TestElementPaths(t *testing.T) {
 	}
 	if _, err := ReplaceElement(els, "5", nil); err == nil {
 		t.Fatal("replaced a missing element")
+	}
+}
+
+func TestComments(t *testing.T) {
+	p, err := ParseProject("screen home\n  box comment=\"Roomier\" class=\"p-2\"\n    text \"a\"\n  end\nscreen pay\n  icon mail comment=\"Bigger\"\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Comment{{"home", "0", "Roomier"}, {"pay", "0", "Bigger"}}
+	if got := p.Comments(); !slices.Equal(got, want) {
+		t.Fatalf("comments %v", got)
+	}
+	if got := FormatUI(p.Screens[0].UI); got != "box class=\"p-2\" comment=\"Roomier\"\n  text \"a\"\nend\n" {
+		t.Fatalf("formatted as\n%s", got)
+	}
+	els, err := SetComment(p.Screens[0].UI, "0.0", "Bolder")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if els, _ = SetComment(els, "0", ""); FormatUI(els) != "box class=\"p-2\"\n  text \"a\" comment=\"Bolder\"\nend\n" {
+		t.Fatalf("set as\n%s", FormatUI(els))
+	}
+	if p.Screens[0].UI[0].Attr("comment") != "Roomier" || p.Screens[0].UI[0].Children[0].Attr("comment") != "" {
+		t.Fatal("setting a comment changed the elements")
+	}
+	if _, err := SetComment(els, "3", "x"); err == nil {
+		t.Fatal("commented a missing element")
 	}
 }
 

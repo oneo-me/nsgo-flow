@@ -348,6 +348,23 @@ func (d *document) change(p flowfile.Project, group string) {
 	})
 }
 
+// setComment sets the comment on the element at path of the open
+// screen, or removes it when text is "", as a change undo reverts.
+func (d *document) setComment(path, text string) {
+	p := d.doc.GetUntracked()
+	i := p.ScreenIndex(d.screen.GetUntracked())
+	if i < 0 {
+		return
+	}
+	els, err := flowfile.SetComment(p.Screens[i].UI, path, text)
+	if err != nil {
+		return
+	}
+	p.Screens = slices.Clone(p.Screens)
+	p.Screens[i].UI = els
+	d.change(p, "")
+}
+
 func (d *document) undo() { d.step(d.undos, d.redos) }
 func (d *document) redo() { d.step(d.redos, d.undos) }
 

@@ -11,6 +11,7 @@ Flow Editor is a single-window [NSGo](https://github.com/nsgo-dev/nsgo) desktop 
 | `main.go`, `tabs.go` | The window, its title bar of tabs, the menu and the wiring between editor and assistant. |
 | `editor.go`, `diagram.go` | The open documents, their history, files and open screen and flow, and the flow chart. |
 | `screens.go`, `mockup.go`, `icons.go` | The sidebar of designs and flows, and the drawing of a screen's design. |
+| `comments.go` | The pins on commented elements and the card that edits the selected one's comment. |
 | `assistant.go` | The conversation and the turns that run the model. |
 | `settings.go` | The provider and statistics settings. |
 | `stats.go` | The opt-out usage statistics. |
@@ -24,6 +25,7 @@ Flow Editor is a single-window [NSGo](https://github.com/nsgo-dev/nsgo) desktop 
 - A design is a draft drawn from a few primitives shaped by Tailwind CSS classes, not from ready-made controls, so the model can draw any look. Classes NSGo does not know go back to the model as a warning with the tool's result.
 - A design lays out at its device's size on a plane the design canvas moves and scales, as the flow chart's camera does, since NSGo's zooming scroll views exist only on Apple platforms.
 - Platforms hit-test views without that transform, so a layer over the design finds the element under the pointer from the elements' frames, as the flow chart finds its nodes. Elements are named by their paths, which the selection and `set_element` use.
+- A comment is an attribute of its element in the flow file, so it is saved with the file and follows the element through edits, where paths shift. The user adds and removes comments; the assistant only resolves them with `resolve_comment`, `set_element` keeps a rewritten element's comment, and a tool call that drops one otherwise is told so.
 - The flow file names icons by their Lucide names, or older ones it maps to them, as `flowfile` cannot import NSGo. `tools/iconsgen`, run by `go generate` after updating NSGo, writes every name NSGo's Lucide package has into `flowfile` and the map from names to icons into the app.
 - One flow view follows the open flow of the document shown instead of remounting per flow or tab, and the design covers it while its tab is open.
 - The chart fits only once a change's batch is over: remounting a chart, or fitting it while it takes new data, trips NSGo's commit check on macOS.
@@ -36,7 +38,7 @@ Flow Editor is a single-window [NSGo](https://github.com/nsgo-dev/nsgo) desktop 
 
 **Assistant turn.** Sending a message starts a turn on a goroutine that streams the model's reply. Each tool call is applied on the UI's goroutine through the editor, which then opens the screen and flow the call touched, and its result goes back to the model until it answers in text. Tools that omit a screen or flow act on the open one. Folder tools read files on the turn's goroutine instead, so a large project never blocks the UI.
 
-**Files.** Every document has a file: making one asks where to save it first, and a message sent with none open makes one. Opening parses a flow file into a tab of its own, or shows the file's tab when it is open already; a file without screens, from before screens existed, reads as one screen with one flow. A document saves to the path it was opened from or saved to, which NSGo's save dialog reports. Saving writes the canonical form, so comments in a hand-written file are dropped.
+**Files.** Every document has a file: making one asks where to save it first, and a message sent with none open makes one. Opening parses a flow file into a tab of its own, or shows the file's tab when it is open already; a file without screens, from before screens existed, reads as one screen with one flow. A document saves to the path it was opened from or saved to, which NSGo's save dialog reports. Saving writes the canonical form, so `#` comments in a hand-written file are dropped.
 
 **Statistics.** Release builds send an Umami pageview at start, an event per message sent and heartbeats while the chart or the conversation changes. A queue on its own goroutine posts them and drops failures.
 
