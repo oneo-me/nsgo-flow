@@ -22,7 +22,7 @@ import (
 const (
 	statsURL     = "https://umami.oneo.me/api/send"
 	statsWebsite = "0d6c7a62-255c-498f-ad36-c4c57d93ab0c"
-	statsHost    = "flow.oneo.me"
+	statsHost    = "scenra.oneo.me"
 )
 
 // Storage keys of the statistics: the install's ID, and keyStats "off"
@@ -95,7 +95,7 @@ func reportUsage(cx *core.Scope, e *editor, a *assistant) {
 			return
 		}
 		w := env.Window()
-		p := statsPayload{Website: statsWebsite, Hostname: statsHost, URL: "/", Title: "Flow Editor",
+		p := statsPayload{Website: statsWebsite, Hostname: statsHost, URL: "/", Title: "Scenra",
 			Language: env.Locale(), Screen: fmt.Sprintf("%dx%d", int(w.Width), int(w.Height)),
 			Tag: osName(env.OS()), ID: id, Name: name}
 		select {
@@ -163,7 +163,7 @@ func statsAgent(os core.OS) string {
 	if !ok {
 		return ""
 	}
-	return "Mozilla/5.0 (" + p + ") NSGoFlow/1.0"
+	return "Mozilla/5.0 (" + p + ") Scenra/1.0"
 }
 
 // osName is the platform's name, as the statistics tag it.

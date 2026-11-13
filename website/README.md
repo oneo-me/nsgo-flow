@@ -1,19 +1,19 @@
-# Flow Editor website
+# Scenra website
 
-The official site at <https://oneo-me.github.io/nsgo-flow/>: static Astro pages
+The official site at <https://oneo-me.github.io/nsgo-scenra/>: static Astro pages
 in English and Chinese, deployed to GitHub Pages by the repository's Website
 workflow.
 
 ```sh
 bun install
-bun run dev          # serve the site at http://localhost:4321/nsgo-flow/
+bun run dev          # serve the site at http://localhost:4321/nsgo-scenra/
 bun run build        # typecheck, then build dist/
 bun run preview      # serve dist/
 ```
 
 ## Pages
 
-Paths are below <https://oneo-me.github.io/nsgo-flow/>.
+Paths are below <https://oneo-me.github.io/nsgo-scenra/>.
 
 | Page | Path |
 | --- | --- |
@@ -37,7 +37,7 @@ belongs in `astro.config.mjs`, the Umami script's `data-domains` in
 
 ## Statistics
 
-`Layout.astro` loads Umami with Flow Editor's website ID, tagged `website`, so
+`Layout.astro` loads Umami with Scenra's website ID, tagged `website`, so
 visits are counted beside the app's own use. `data-domains` keeps local servers
 and other hosts out. The privacy page describes what is counted and what is never sent.
 
@@ -46,5 +46,5 @@ and other hosts out. The privacy page describes what is counted and what is neve
 The [Website workflow](../.github/workflows/website.yml) builds `website/dist`
 on pushes to `main` and publishes it to GitHub Pages from GitHub Actions. No
 custom domain is configured: the site is the repository's project page,
-`https://oneo-me.github.io/nsgo-flow/`. `astro.config.mjs` fixes the site and
+`https://oneo-me.github.io/nsgo-scenra/`. `astro.config.mjs` fixes the site and
 base for that path; another address needs both changed.

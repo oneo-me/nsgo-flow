@@ -27,7 +27,7 @@ export function langPaths() {
 /** langAlternate is the hreflang of a language. */
 export const langAlternate = (lang: Lang) => (lang === 'zh' ? 'zh-CN' : 'en');
 
-const repo = 'https://github.com/oneo-me/nsgo-flow';
+const repo = 'https://github.com/oneo-me/nsgo-scenra';
 
 export const links = {
   repo,

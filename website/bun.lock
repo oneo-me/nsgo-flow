@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "flow-editor-website",
+      "name": "scenra-website",
       "dependencies": {
         "astro": "^7.4.5",
       },

@@ -6,8 +6,8 @@ import (
 	"github.com/nsgo-dev/nsgo/ui"
 	uiflow "github.com/nsgo-dev/nsgo/ui/flow"
 
-	"github.com/oneo-me/nsgo-flow/flowfile"
-	"github.com/oneo-me/nsgo-flow/locales"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
+	"github.com/oneo-me/nsgo-scenra/locales"
 )
 
 // diagramData maps the flow with id, the open one for "", onto the

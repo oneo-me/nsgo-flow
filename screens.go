@@ -8,8 +8,8 @@ import (
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
 
-	"github.com/oneo-me/nsgo-flow/agent"
-	"github.com/oneo-me/nsgo-flow/locales"
+	"github.com/oneo-me/nsgo-scenra/agent"
+	"github.com/oneo-me/nsgo-scenra/locales"
 )
 
 const sidebarWidth = 220

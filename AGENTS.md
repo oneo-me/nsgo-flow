@@ -1,6 +1,6 @@
-# Flow Editor
+# Scenra
 
-A desktop app and flow designer built on [NSGo](https://github.com/nsgo-dev/nsgo): a flow file's screens and their flow charts on the left, an AI assistant that draws them on the right. Read [ARCHITECTURE.md](ARCHITECTURE.md) before coding.
+A desktop app and flow designer built on [NSGo](https://github.com/nsgo-dev/nsgo): a Scenra file's screens and their flow charts on the left, an AI assistant that draws them on the right. Read [ARCHITECTURE.md](ARCHITECTURE.md) before coding.
 
 ## Principles
 

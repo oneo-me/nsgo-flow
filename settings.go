@@ -5,8 +5,8 @@ import (
 	"github.com/nsgo-dev/nsgo/core"
 	"github.com/nsgo-dev/nsgo/ui"
 
-	"github.com/oneo-me/nsgo-flow/agent"
-	"github.com/oneo-me/nsgo-flow/locales"
+	"github.com/oneo-me/nsgo-scenra/agent"
+	"github.com/oneo-me/nsgo-scenra/locales"
 )
 
 // The storage keys of the provider's settings.

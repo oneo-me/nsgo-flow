@@ -1,4 +1,4 @@
-module github.com/oneo-me/nsgo-flow
+module github.com/oneo-me/nsgo-scenra
 
 go 1.26.0
 

@@ -266,7 +266,7 @@ var keyOfText = [numTexts]string{
 
 // textsEn are the messages without arguments in en.
 var textsEn = i18n.NewTexts(""+
-	"Flow Editor"+
+	"Scenra"+
 	"Untitled"+
 	"Edited"+
 	"File"+
@@ -277,7 +277,7 @@ var textsEn = i18n.NewTexts(""+
 	"Save"+
 	"Save As…"+
 	"Close Tab"+
-	"Make a flow file, or open one, to design an app or chart a flow."+
+	"Make a Scenra file, or open one, to design an app or chart a flow."+
 	"Settings…"+
 	"Undo Change"+
 	"Redo Change"+
@@ -334,7 +334,7 @@ var textsEn = i18n.NewTexts(""+
 	"Skipped"+
 	"Statistics"+
 	"Send usage statistics"+
-	"Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor."+
+	"Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Scenra."+
 	"Read the project"+
 	"Add screen"+
 	"Draw interface"+
@@ -358,7 +358,7 @@ var textsEn = i18n.NewTexts(""+
 	"Change element"+
 	"Resolve comment",
 	[]uint16{
-		11,
+		6,
 		8,
 		6,
 		4,
@@ -369,7 +369,7 @@ var textsEn = i18n.NewTexts(""+
 		4,
 		10,
 		9,
-		64,
+		66,
 		11,
 		11,
 		11,
@@ -426,7 +426,7 @@ var textsEn = i18n.NewTexts(""+
 		7,
 		10,
 		21,
-		117,
+		112,
 		16,
 		10,
 		14,
@@ -453,7 +453,7 @@ var textsEn = i18n.NewTexts(""+
 
 // textsZhHans are the messages without arguments in zh-Hans.
 var textsZhHans = i18n.NewTexts(""+
-	"流程编辑器"+
+	"Scenra"+
 	"未命名"+
 	"已编辑"+
 	"文件"+
@@ -464,7 +464,7 @@ var textsZhHans = i18n.NewTexts(""+
 	"保存"+
 	"另存为…"+
 	"关闭标签页"+
-	"新建或打开一个流程文件，开始设计应用或绘制流程。"+
+	"新建或打开一个 Scenra 文件，开始设计应用或绘制流程。"+
 	"设置…"+
 	"撤销更改"+
 	"重做更改"+
@@ -521,7 +521,7 @@ var textsZhHans = i18n.NewTexts(""+
 	"已跳过"+
 	"统计"+
 	"发送使用统计"+
-	"发送应用的使用次数和时长，不含流程图、消息或个人信息，帮助改进 Flow Editor。"+
+	"发送应用的使用次数和时长，不含流程图、消息或个人信息，帮助改进 Scenra。"+
 	"读取项目"+
 	"添加界面"+
 	"绘制界面"+
@@ -545,7 +545,7 @@ var textsZhHans = i18n.NewTexts(""+
 	"修改元素"+
 	"处理评论",
 	[]uint16{
-		15,
+		6,
 		9,
 		9,
 		6,
@@ -556,7 +556,7 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		12,
 		15,
-		72,
+		74,
 		9,
 		12,
 		12,
@@ -613,7 +613,7 @@ var textsZhHans = i18n.NewTexts(""+
 		9,
 		6,
 		18,
-		108,
+		103,
 		12,
 		12,
 		12,
@@ -738,7 +738,7 @@ func (msgs Messages) arg(s string) string {
 	return s
 }
 
-// AppName says "Flow Editor"
+// AppName says "Scenra"
 // in the language the app shows under cx.
 //
 // The app's name.
@@ -817,7 +817,7 @@ func CloseTab(cx *core.Scope) string { return For(cx).CloseTab() }
 // CloseTab is the package's CloseTab in the language of msgs.
 func (msgs Messages) CloseTab() string { return msgs.text(textCloseTab) }
 
-// NoFiles says "Make a flow file, or open one, to design an app or chart a flow."
+// NoFiles says "Make a Scenra file, or open one, to design an app or chart a flow."
 // in the language the app shows under cx.
 func NoFiles(cx *core.Scope) string { return For(cx).NoFiles() }
 
@@ -1403,7 +1403,7 @@ func StatsSend(cx *core.Scope) string { return For(cx).StatsSend() }
 // StatsSend is the package's StatsSend in the language of msgs.
 func (msgs Messages) StatsSend() string { return msgs.text(textStatsSend) }
 
-// StatsDetail says "Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor."
+// StatsDetail says "Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Scenra."
 // in the language the app shows under cx.
 func StatsDetail(cx *core.Scope) string { return For(cx).StatsDetail() }
 

@@ -1,6 +1,6 @@
-# Flow Editor architecture
+# Scenra architecture
 
-Flow Editor is a single-window [NSGo](https://github.com/nsgo-dev/nsgo) desktop app, for desktops only. The editor holds the open documents, a tab each across the window's top, beside the assistant running the window's height; a document is an app's screens each with a design and its flow charts, with its file, undo history and conversation. The sidebar, design and diagram draw the document shown, and the assistant runs a model conversation whose tool calls edit the document it began on.
+Scenra is a single-window [NSGo](https://github.com/nsgo-dev/nsgo) desktop app, for desktops only. The editor holds the open documents, a tab each across the window's top, beside the assistant running the window's height; a document is an app's screens each with a design and its flow charts, with its file, undo history and conversation. The sidebar, design and diagram draw the document shown, and the assistant runs a model conversation whose tool calls edit the document it began on.
 
 ## Code map
 

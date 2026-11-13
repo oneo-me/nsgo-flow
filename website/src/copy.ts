@@ -6,14 +6,14 @@ import type { Lang } from './site';
 
 const en = {
   meta: {
-    homeTitle: 'Flow Editor — Design apps by talking',
+    homeTitle: 'Scenra — Design apps by talking',
     homeDescription:
       'A desktop flow designer with an AI assistant. Describe an app and watch its screens and flow charts take shape on a canvas you can keep editing.',
     privacyTitle: 'Privacy',
-    privacyDescription: 'What Flow Editor and its website count, and what they never send.',
+    privacyDescription: 'What Scenra and its website count, and what they never send.',
   },
   brand: {
-    name: 'Flow Editor',
+    name: 'Scenra',
     tagline: 'Screens and flow charts, drawn as you talk.',
   },
   nav: {
@@ -41,22 +41,22 @@ const en = {
   hero: {
     eyebrow: 'Open source · MIT · macOS, Windows and Linux',
     title: 'Design apps by talking.',
-    lead: 'Flow Editor is a desktop designer with an AI assistant. Describe the app you have in mind, and watch its screens and flow charts take shape on a canvas you can keep editing.',
+    lead: 'Scenra is a desktop designer with an AI assistant. Describe the app you have in mind, and watch its screens and flow charts take shape on a canvas you can keep editing.',
     primary: 'Get started',
     secondary: 'View on GitHub',
     note: 'Free and open source. Bring your own model.',
     imageAlt:
-      'Flow Editor showing an order-handling flow chart on the canvas and the assistant in a side panel',
+      'Scenra showing an order-handling flow chart on the canvas and the assistant in a side panel',
   },
   features: {
-    kicker: 'Why Flow Editor',
+    kicker: 'Why Scenra',
     title: 'From first sentence to a file you can keep.',
     lead: 'Screens, flows and the conversation stay together, so a draft never gets lost between tools.',
     cards: [
       {
         icon: 'layers',
         title: 'Screens and flows in one place',
-        body: 'Every .flow file holds an app’s screens, each with a phone, tablet or desktop design and its flow charts, listed together in the sidebar.',
+        body: 'Every .scenra file holds an app’s screens, each with a phone, tablet or desktop design and its flow charts, listed together in the sidebar.',
       },
       {
         icon: 'sparkles',
@@ -76,7 +76,7 @@ const en = {
       {
         icon: 'file',
         title: 'Plain text you own',
-        body: 'No database, no lock-in. .flow files are readable, diffable and editable by hand, and saves stay where you opened them.',
+        body: 'No database, no lock-in. .scenra files are readable, diffable and editable by hand, and saves stay where you opened them.',
       },
       {
         icon: 'undo',
@@ -119,12 +119,12 @@ const en = {
   file: {
     kicker: 'Plain text',
     title: 'A file you can read, diff and commit.',
-    lead: 'Every project is one .flow file: plain text that sits beside the code it describes. Review it in a pull request, edit it by hand, or keep it in version control.',
+    lead: 'Every project is one .scenra file: plain text that sits beside the code it describes. Review it in a pull request, edit it by hand, or keep it in version control.',
   },
   privacy: {
     kicker: 'Statistics',
     title: 'Counted, not watched.',
-    lead: 'Flow Editor counts how often it is used, nothing about what you make. This site does the same.',
+    lead: 'Scenra counts how often it is used, nothing about what you make. This site does the same.',
     cards: [
       {
         icon: 'chart',
@@ -142,15 +142,15 @@ const en = {
   start: {
     kicker: 'Get started',
     title: 'Designing in a few minutes.',
-    lead: 'Flow Editor is free and open source. Install Go, clone the repository, and run it.',
+    lead: 'Scenra is free and open source. Install Go, clone the repository, and run it.',
     requirements: [
       'Go 1.26 or newer',
       'An OpenAI-compatible model with tool calls, hosted or local',
     ],
     terminal: 'Terminal',
     commands: [
-      'git clone https://github.com/oneo-me/nsgo-flow.git',
-      'cd nsgo-flow',
+      'git clone https://github.com/oneo-me/nsgo-scenra.git',
+      'cd nsgo-scenra',
       'go tool nsgo dev',
     ],
     primary: 'Read the README',
@@ -166,11 +166,11 @@ const en = {
       },
       {
         q: 'Where are my designs kept?',
-        a: 'In the .flow files you choose. The app keeps its settings, the paths of open files and a random statistics ID on the device; nothing else.',
+        a: 'In the .scenra files you choose. The app keeps its settings, the paths of open files and a random statistics ID on the device; nothing else.',
       },
       {
         q: 'Is there a web or mobile version?',
-        a: 'No. Flow Editor is a desktop app for macOS, Windows and Linux.',
+        a: 'No. Scenra is a desktop app for macOS, Windows and Linux.',
       },
       {
         q: 'What is sent for statistics?',
@@ -178,7 +178,7 @@ const en = {
       },
       {
         q: 'Can I use it for free?',
-        a: 'Yes. Flow Editor is MIT licensed, and contributions are welcome under the same license.',
+        a: 'Yes. Scenra is MIT licensed, and contributions are welcome under the same license.',
       },
     ],
   },
@@ -195,12 +195,12 @@ const en = {
     blog: 'Blog',
     x: 'X',
     sponsors: 'GitHub Sponsors',
-    rights: 'Flow Editor',
+    rights: 'Scenra',
     built: 'Built with NSGo',
   },
   privacyPage: {
     title: 'Privacy',
-    lead: 'Flow Editor is built to know as little about you as possible. This page covers both the app and this website.',
+    lead: 'Scenra is built to know as little about you as possible. This page covers both the app and this website.',
     sections: [
       {
         title: 'The app',
@@ -230,7 +230,7 @@ const en = {
         body: [],
         items: [
           'Settings, the paths of the files open in tabs and the random statistics ID live in the app’s own storage on your device.',
-          'Flow files are saved only where you choose.',
+          'Scenra files are saved only where you choose.',
         ],
       },
       {
@@ -256,14 +256,14 @@ const en = {
 
 const zh: typeof en = {
   meta: {
-    homeTitle: 'Flow Editor — 把应用设计，说出来',
+    homeTitle: 'Scenra — 把应用设计，说出来',
     homeDescription:
       '带 AI 助手的桌面设计工具。说出你想要的应用，界面和流程图会在画布上成形，之后还能继续亲手修改。',
     privacyTitle: '隐私',
-    privacyDescription: 'Flow Editor 及其网站统计什么，以及从不发送什么。',
+    privacyDescription: 'Scenra 及其网站统计什么，以及从不发送什么。',
   },
   brand: {
-    name: 'Flow Editor',
+    name: 'Scenra',
     tagline: '把界面和流程，边说边画出来。',
   },
   nav: {
@@ -291,21 +291,21 @@ const zh: typeof en = {
   hero: {
     eyebrow: '开源 · MIT 许可 · macOS、Windows 和 Linux',
     title: '把应用设计，说出来',
-    lead: 'Flow Editor 是一款带 AI 助手的桌面设计工具。说出你脑海里的应用，界面和流程图就会在画布上成形，之后还能继续亲手修改。',
+    lead: 'Scenra 是一款带 AI 助手的桌面设计工具。说出你脑海里的应用，界面和流程图就会在画布上成形，之后还能继续亲手修改。',
     primary: '开始使用',
     secondary: '在 GitHub 查看',
     note: '免费开源，带上自己的模型即可。',
-    imageAlt: 'Flow Editor：画布上是一张订单处理流程图，右侧是助手面板',
+    imageAlt: 'Scenra：画布上是一张订单处理流程图，右侧是助手面板',
   },
   features: {
-    kicker: '为什么是 Flow Editor',
+    kicker: '为什么是 Scenra',
     title: '从第一句话，到一份留得住的文件',
     lead: '界面、流程和对话放在一起，草稿不会丢在几个工具之间。',
     cards: [
       {
         icon: 'layers',
         title: '界面与流程，在同一处',
-        body: '每个 .flow 文件保存应用的多个界面，每个界面都有手机、平板或桌面设计，以及一张或多张流程图，在侧栏中一起列出。',
+        body: '每个 .scenra 文件保存应用的多个界面，每个界面都有手机、平板或桌面设计，以及一张或多张流程图，在侧栏中一起列出。',
       },
       {
         icon: 'sparkles',
@@ -325,7 +325,7 @@ const zh: typeof en = {
       {
         icon: 'file',
         title: '纯文本，归你所有',
-        body: '没有数据库，也没有厂商锁定。.flow 文件可读、可 diff、可手改，保存时留在你打开它的位置。',
+        body: '没有数据库，也没有厂商锁定。.scenra 文件可读、可 diff、可手改，保存时留在你打开它的位置。',
       },
       {
         icon: 'undo',
@@ -368,12 +368,12 @@ const zh: typeof en = {
   file: {
     kicker: '纯文本',
     title: '一份能读、能 diff、能提交的文件',
-    lead: '每个项目都是一个 .flow 文件：纯文本，放在它所描述的代码旁边。可以在 pull request 里审阅、手写修改，或者纳入版本控制。',
+    lead: '每个项目都是一个 .scenra 文件：纯文本，放在它所描述的代码旁边。可以在 pull request 里审阅、手写修改，或者纳入版本控制。',
   },
   privacy: {
     kicker: '使用统计',
     title: '被计数，不被监视',
-    lead: 'Flow Editor 只统计使用情况，不统计你做了什么，网站也一样。',
+    lead: 'Scenra 只统计使用情况，不统计你做了什么，网站也一样。',
     cards: [
       {
         icon: 'chart',
@@ -391,15 +391,15 @@ const zh: typeof en = {
   start: {
     kicker: '开始使用',
     title: '几分钟内开始设计',
-    lead: 'Flow Editor 免费开源。安装 Go，克隆仓库，就能运行。',
+    lead: 'Scenra 免费开源。安装 Go，克隆仓库，就能运行。',
     requirements: [
       'Go 1.26 或更高版本',
       '任意支持工具调用的 OpenAI 兼容模型，云端或本地皆可',
     ],
     terminal: '终端',
     commands: [
-      'git clone https://github.com/oneo-me/nsgo-flow.git',
-      'cd nsgo-flow',
+      'git clone https://github.com/oneo-me/nsgo-scenra.git',
+      'cd nsgo-scenra',
       'go tool nsgo dev',
     ],
     primary: '阅读 README',
@@ -415,11 +415,11 @@ const zh: typeof en = {
       },
       {
         q: '设计保存在哪里？',
-        a: '保存在你选择的 .flow 文件里。应用只在设备上保存设置、打开过的文件路径和一个随机的统计 ID。',
+        a: '保存在你选择的 .scenra 文件里。应用只在设备上保存设置、打开过的文件路径和一个随机的统计 ID。',
       },
       {
         q: '有网页版或移动版吗？',
-        a: '没有。Flow Editor 是面向 macOS、Windows 和 Linux 的桌面应用。',
+        a: '没有。Scenra 是面向 macOS、Windows 和 Linux 的桌面应用。',
       },
       {
         q: '统计会上传什么？',
@@ -427,7 +427,7 @@ const zh: typeof en = {
       },
       {
         q: '可以免费使用吗？',
-        a: '可以。Flow Editor 采用 MIT 许可，欢迎以相同许可贡献代码。',
+        a: '可以。Scenra 采用 MIT 许可，欢迎以相同许可贡献代码。',
       },
     ],
   },
@@ -444,12 +444,12 @@ const zh: typeof en = {
     blog: '博客',
     x: 'X',
     sponsors: 'GitHub Sponsors',
-    rights: 'Flow Editor',
+    rights: 'Scenra',
     built: '基于 NSGo 构建',
   },
   privacyPage: {
     title: '隐私',
-    lead: 'Flow Editor 尽量少知道关于你的事。本页同时说明应用和网站的做法。',
+    lead: 'Scenra 尽量少知道关于你的事。本页同时说明应用和网站的做法。',
     sections: [
       {
         title: '应用',
@@ -475,7 +475,7 @@ const zh: typeof en = {
         body: [],
         items: [
           '设置、标签页中打开文件的路径和随机统计 ID 保存在应用自己的设备存储中。',
-          '流程文件只会保存到你选择的位置。',
+          'Scenra 文件只会保存到你选择的位置。',
         ],
       },
       {

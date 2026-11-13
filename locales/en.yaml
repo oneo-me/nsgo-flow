@@ -1,5 +1,5 @@
 appName:
-  message: Flow Editor
+  message: Scenra
   description: The app's name.
 untitled: Untitled
 edited: Edited
@@ -11,7 +11,7 @@ open: Open…
 save: Save
 saveAs: Save As…
 closeTab: Close Tab
-noFiles: Make a flow file, or open one, to design an app or chart a flow.
+noFiles: Make a Scenra file, or open one, to design an app or chart a flow.
 settings: Settings…
 undoChange: Undo Change
 redoChange: Redo Change
@@ -75,7 +75,7 @@ statusBlocked: Blocked
 statusSkipped: Skipped
 statsSection: Statistics
 statsSend: Send usage statistics
-statsDetail: Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Flow Editor.
+statsDetail: Sends how often and how long the app is used, with no charts, messages or personal data, to help improve Scenra.
 toolGetProject: Read the project
 toolAddScreen: Add screen
 toolSetUI: Draw interface

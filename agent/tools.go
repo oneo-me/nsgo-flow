@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/oneo-me/nsgo-flow/flowfile"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
 )
 
 // Tool names; Show is the one that changes no project.

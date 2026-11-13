@@ -8,7 +8,7 @@ import (
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
 
-	"github.com/oneo-me/nsgo-flow/flowfile"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
 )
 
 // deviceSize is the size a screen of device is laid out at.

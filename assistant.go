@@ -18,8 +18,8 @@ import (
 	"github.com/nsgo-dev/nsgo/ui"
 	"github.com/nsgo-dev/nsgo/ui/chat"
 
-	"github.com/oneo-me/nsgo-flow/agent"
-	"github.com/oneo-me/nsgo-flow/locales"
+	"github.com/oneo-me/nsgo-scenra/agent"
+	"github.com/oneo-me/nsgo-scenra/locales"
 )
 
 // call is a tool call of a round, as the transcript shows it.

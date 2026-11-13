@@ -1,4 +1,4 @@
-// Command nsgo-flow is a desktop app designer with an AI assistant: flow
+// Command nsgo-scenra is a desktop app designer with an AI assistant: flow
 // files open in tabs, each listing its screens' designs and flow charts on
 // the left, and on the right a conversation with an OpenAI-compatible
 // model that draws them with tools.
@@ -13,7 +13,7 @@ import (
 	"github.com/nsgo-dev/nsgo/desktop"
 	"github.com/nsgo-dev/nsgo/ui"
 
-	"github.com/oneo-me/nsgo-flow/locales"
+	"github.com/oneo-me/nsgo-scenra/locales"
 )
 
 func main() {

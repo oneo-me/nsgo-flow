@@ -7,8 +7,8 @@ import (
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
 
-	"github.com/oneo-me/nsgo-flow/flowfile"
-	"github.com/oneo-me/nsgo-flow/locales"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
+	"github.com/oneo-me/nsgo-scenra/locales"
 )
 
 // pinSize is a comment pin's diameter on screen, and cardWidth the

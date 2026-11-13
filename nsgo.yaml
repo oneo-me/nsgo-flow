@@ -1,10 +1,10 @@
-name: Flow Editor
-id: me.oneo.nsgo-flow
+name: Scenra
+id: me.oneo.nsgo-scenra
 version: 0.1.0
 
 file_types:
-  - name: Flow File
-    extensions: [flow]
+  - name: Scenra File
+    extensions: [scenra]
 
 dev:
   target: native

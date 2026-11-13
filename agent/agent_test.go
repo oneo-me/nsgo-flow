@@ -11,7 +11,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/oneo-me/nsgo-flow/flowfile"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
 )
 
 func TestApply(t *testing.T) {
@@ -211,8 +211,8 @@ func TestReadFolder(t *testing.T) {
 			t.Errorf("%s %s:\n%q, failed %v", s.tool, s.args, out, failed)
 		}
 	}
-	prompt := SystemPrompt(flowfile.Project{}, Location{}, Context{File: "/w/app.flow", Folder: "/w", Others: []string{"/x/b.flow"}})
-	if !strings.Contains(prompt, `in the folder "/w"`) || !strings.Contains(prompt, "/x/b.flow") {
+	prompt := SystemPrompt(flowfile.Project{}, Location{}, Context{File: "/w/app.scenra", Folder: "/w", Others: []string{"/x/b.scenra"}})
+	if !strings.Contains(prompt, `in the folder "/w"`) || !strings.Contains(prompt, "/x/b.scenra") {
 		t.Fatal("the prompt does not mention the folder and the other files")
 	}
 }

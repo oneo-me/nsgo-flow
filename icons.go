@@ -6,7 +6,7 @@ import (
 	"github.com/nsgo-dev/nsgo/core"
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 
-	"github.com/oneo-me/nsgo-flow/flowfile"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
 )
 
 // iconNamed is the icon a design names, by its Lucide name or an alias;

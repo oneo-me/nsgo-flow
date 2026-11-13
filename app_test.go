@@ -16,7 +16,7 @@ import (
 	"github.com/nsgo-dev/nsgo/core"
 	"github.com/nsgo-dev/nsgo/nsgotest"
 
-	"github.com/oneo-me/nsgo-flow/flowfile"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
 )
 
 // TestMain gives the platform the main thread under nsgo test -target.
@@ -61,15 +61,15 @@ func TestAssistantDrawsOnTheChart(t *testing.T) {
 		deltas(`{"content":"I drew **two steps**."}`),
 	)
 	app, e := startEditor(t, nsgotest.Storage(map[string]string{keyBaseURL: url, keyModel: "test-model"}))
-	app.Find("text:Make a flow file, or open one, to design an app or chart a flow.")
+	app.Find("text:Make a Scenra file, or open one, to design an app or chart a flow.")
 	// A message with no file open makes one first.
-	newFileAt(t, app, "orders.flow")
+	newFileAt(t, app, "orders.scenra")
 	app.Type("label:Message", "Chart an order flow")
 	app.Press("label:Send")
 	app.WaitFor("flow >> label:Ship order", 5*time.Second)
 	app.WaitFor("text:two steps", 5*time.Second)
 	app.Find("text:Chart an order flow")
-	if got := tabNames(app); !slices.Equal(got, []string{"orders.flow"}) {
+	if got := tabNames(app); !slices.Equal(got, []string{"orders.scenra"}) {
 		t.Fatalf("tabs %v", got)
 	}
 
@@ -90,7 +90,7 @@ func TestAssistantShowsFailuresAndAsksForAProvider(t *testing.T) {
 	app.Type("id:base-url", model(t))
 	app.Press("id:settings-done")
 	app.WaitForGone("id:settings", 2*time.Second)
-	newFileAt(t, app, "hello.flow")
+	newFileAt(t, app, "hello.scenra")
 	app.Press("label:Send")
 	app.WaitFor("text:no more replies (HTTP 500)", 5*time.Second)
 	app.Find("id:retry")
@@ -124,8 +124,8 @@ func tabNames(app *nsgotest.App) []string {
 }
 
 func TestOpensFlowFilesInTabs(t *testing.T) {
-	plan := writeFlow(t, "plan.flow", "title \"Plan\"\nnode a \"Research\" note=\"Read the docs\"\na -> b\n")
-	shop := writeFlow(t, "shop.flow", "screen home \"Home\"\n  text \"Welcome\"\n")
+	plan := writeFlow(t, "plan.scenra", "title \"Plan\"\nnode a \"Research\" note=\"Read the docs\"\na -> b\n")
+	shop := writeFlow(t, "shop.scenra", "screen home \"Home\"\n  text \"Welcome\"\n")
 	app, e := startEditor(t)
 	open := func(path string) {
 		app.Post(func() {
@@ -138,7 +138,7 @@ func TestOpensFlowFilesInTabs(t *testing.T) {
 	open(plan)
 	app.Find("flow >> label:Research")
 	app.Find("flow >> text:Read the docs")
-	if got := tabNames(app); !slices.Equal(got, []string{"plan.flow"}) {
+	if got := tabNames(app); !slices.Equal(got, []string{"plan.scenra"}) {
 		t.Fatalf("tabs %v", got)
 	}
 	open(shop)
@@ -146,11 +146,11 @@ func TestOpensFlowFilesInTabs(t *testing.T) {
 	// A file open already shows its tab again.
 	open(plan)
 	app.WaitFor("flow >> label:Research", time.Second)
-	if got := tabNames(app); !slices.Equal(got, []string{"plan.flow", "shop.flow"}) {
+	if got := tabNames(app); !slices.Equal(got, []string{"plan.scenra", "shop.scenra"}) {
 		t.Fatalf("tabs %v", got)
 	}
 	// The sidebar lists the entries of the document shown.
-	app.Press("id:title-bar >> label:shop.flow")
+	app.Press("id:title-bar >> label:shop.scenra")
 	app.WaitFor("id:design-home", time.Second)
 	if app.Exists("id:flow-main") {
 		t.Fatal("the sidebar still lists the other document's flow")
@@ -159,14 +159,14 @@ func TestOpensFlowFilesInTabs(t *testing.T) {
 	// The files open again at the next start, the one shown too.
 	stored, _ := app.Storage().GetItem(keyOpenFiles)
 	again, _ := startEditor(t, nsgotest.Storage(map[string]string{keyOpenFiles: stored, keyActiveFile: shop}))
-	if got := tabNames(again); !slices.Equal(got, []string{"plan.flow", "shop.flow"}) {
+	if got := tabNames(again); !slices.Equal(got, []string{"plan.scenra", "shop.scenra"}) {
 		t.Fatalf("restored tabs %v", got)
 	}
 	again.Find("design >> text:Welcome")
 }
 
 func TestDesignSelectsWhatThePointerIsOver(t *testing.T) {
-	shop := writeFlow(t, "shop.flow", "screen home \"Home\"\n"+
+	shop := writeFlow(t, "shop.scenra", "screen home \"Home\"\n"+
 		"  box class=\"flex-1 gap-4 p-6\"\n"+
 		"    text \"Welcome\" class=\"text-2xl\"\n"+
 		"    box class=\"flex-row gap-2 p-2\"\n"+
@@ -231,10 +231,10 @@ func TestDesignSelectsWhatThePointerIsOver(t *testing.T) {
 func TestSavesWhereTheFileWasSaved(t *testing.T) {
 	app, e := startEditor(t)
 	// A new file is saved where the user chooses before it opens.
-	saveTo := newFileAt(t, app, "chosen.flow")
+	saveTo := newFileAt(t, app, "chosen.scenra")
 	app.Press("id:new-file")
 	app.Settle()
-	if got := tabNames(app); !slices.Equal(got, []string{"chosen.flow"}) {
+	if got := tabNames(app); !slices.Equal(got, []string{"chosen.scenra"}) {
 		t.Fatalf("tabs after making a file %v", got)
 	}
 	if _, err := os.Stat(saveTo); err != nil {
@@ -261,7 +261,7 @@ func TestSavesWhereTheFileWasSaved(t *testing.T) {
 	}
 
 	// An opened file saves where it came from.
-	opened := writeFlow(t, "opened.flow", "title \"Opened\"\n")
+	opened := writeFlow(t, "opened.scenra", "title \"Opened\"\n")
 	app.Post(func() {
 		if err := e.openPath(opened); err != nil {
 			t.Error(err)
@@ -285,7 +285,7 @@ func TestSavesWhereTheFileWasSaved(t *testing.T) {
 }
 
 func TestUnsavedChangesAskBeforeTheyGo(t *testing.T) {
-	path := writeFlow(t, "plan.flow", "title \"Plan\"\nnode a \"Research\"\n")
+	path := writeFlow(t, "plan.scenra", "title \"Plan\"\nnode a \"Research\"\n")
 	app, e := startEditor(t, nsgotest.PendingAlerts())
 	open := func() {
 		app.Post(func() {
@@ -307,7 +307,7 @@ func TestUnsavedChangesAskBeforeTheyGo(t *testing.T) {
 	closeTab := func() {
 		app.Post(e.closeShown)
 		app.Settle()
-		if alerts := app.Alerts(); len(alerts) != 1 || !strings.Contains(alerts[0].Title, "plan.flow") {
+		if alerts := app.Alerts(); len(alerts) != 1 || !strings.Contains(alerts[0].Title, "plan.scenra") {
 			t.Fatalf("alerts %+v", alerts)
 		}
 	}
@@ -318,7 +318,7 @@ func TestUnsavedChangesAskBeforeTheyGo(t *testing.T) {
 	closeTab()
 	app.Answer(2)
 	app.Settle()
-	if got := tabNames(app); !slices.Equal(got, []string{"plan.flow"}) {
+	if got := tabNames(app); !slices.Equal(got, []string{"plan.scenra"}) {
 		t.Fatalf("after canceling, the tabs are %v", got)
 	}
 
@@ -388,11 +388,11 @@ func TestAssistantKnowsTheFilesAndReadsTheFolder(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc checkout() {}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(dir, "app.flow")
+	path := filepath.Join(dir, "app.scenra")
 	if err := os.WriteFile(path, []byte("title \"App\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	other := writeFlow(t, "other.flow", "screen pay \"Pay\"\n")
+	other := writeFlow(t, "other.scenra", "screen pay \"Pay\"\n")
 	url, bodies := recorder(t,
 		deltas(`{"tool_calls":[{"index":0,"id":"c1","function":{"name":"read_file","arguments":"{\"path\":\"main.go\"}"}},`+
 			`{"index":1,"id":"c2","function":{"name":"get_project","arguments":"{\"file\":\"`+other+`\"}"}}]}`),
@@ -408,7 +408,7 @@ func TestAssistantKnowsTheFilesAndReadsTheFolder(t *testing.T) {
 	app.Press("label:Send")
 	app.WaitFor("text:It has a checkout step.", 5*time.Second)
 	got := bodies()
-	if !strings.Contains(got[0], `"name":"grep"`) || !strings.Contains(got[0], "in the folder") || !strings.Contains(got[0], "other.flow") {
+	if !strings.Contains(got[0], `"name":"grep"`) || !strings.Contains(got[0], "in the folder") || !strings.Contains(got[0], "other.scenra") {
 		t.Fatalf("the first request tells of no folder or other file:\n%s", got[0])
 	}
 	if !strings.Contains(got[1], `func checkout() {}`) || !strings.Contains(got[1], `screen pay`) {
@@ -429,7 +429,7 @@ func TestAssistantDesignsScreensWithFlows(t *testing.T) {
 		deltas(`{"content":"Made it bold."}`),
 	)
 	app, _ := startEditor(t, nsgotest.Size(1440, 900), nsgotest.Storage(map[string]string{keyBaseURL: url, keyModel: "test-model"}))
-	newFileAt(t, app, "signin.flow")
+	newFileAt(t, app, "signin.scenra")
 	app.Type("label:Message", "Design a sign-in screen")
 	app.Press("label:Send")
 	app.WaitFor("text:I drew the sign-in screen.", 5*time.Second)
@@ -462,7 +462,7 @@ func TestCommentsAskTheAssistant(t *testing.T) {
 			`{"index":1,"id":"c2","function":{"name":"resolve_comment","arguments":"{\"path\":\"0.0\"}"}}]}`),
 		deltas(`{"content":"Made it friendlier."}`),
 	)
-	path := writeFlow(t, "shop.flow", "screen home \"Home\"\n  box class=\"flex-1 gap-4 p-6\"\n    text \"Welcome\"\n    text \"Mail\" comment=\"Smaller\"\n  end\n")
+	path := writeFlow(t, "shop.scenra", "screen home \"Home\"\n  box class=\"flex-1 gap-4 p-6\"\n    text \"Welcome\"\n    text \"Mail\" comment=\"Smaller\"\n  end\n")
 	app, e := startEditor(t, nsgotest.Storage(map[string]string{keyBaseURL: url, keyModel: "test-model"}))
 	app.Post(func() {
 		if err := e.openPath(path); err != nil {
@@ -526,7 +526,7 @@ func TestEveryIconNameDraws(t *testing.T) {
 }
 
 func TestExamplesDrawEveryClassAndDrawing(t *testing.T) {
-	paths, _ := filepath.Glob("examples/*.flow")
+	paths, _ := filepath.Glob("examples/*.scenra")
 	for _, path := range paths {
 		data, err := os.ReadFile(path)
 		if err != nil {

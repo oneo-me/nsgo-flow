@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://oneo-me.github.io/nsgo-flow/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://oneo-me.github.io/nsgo-flow/"/>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://oneo-me.github.io/nsgo-flow/zh/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://oneo-me.github.io/nsgo-flow/"/>
+    <loc>https://oneo-me.github.io/nsgo-scenra/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oneo-me.github.io/nsgo-scenra/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://oneo-me.github.io/nsgo-scenra/zh/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oneo-me.github.io/nsgo-scenra/"/>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://oneo-me.github.io/nsgo-flow/zh/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://oneo-me.github.io/nsgo-flow/"/>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://oneo-me.github.io/nsgo-flow/zh/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://oneo-me.github.io/nsgo-flow/"/>
+    <loc>https://oneo-me.github.io/nsgo-scenra/zh/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oneo-me.github.io/nsgo-scenra/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://oneo-me.github.io/nsgo-scenra/zh/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oneo-me.github.io/nsgo-scenra/"/>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://oneo-me.github.io/nsgo-flow/privacy/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://oneo-me.github.io/nsgo-flow/privacy/"/>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://oneo-me.github.io/nsgo-flow/zh/privacy/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://oneo-me.github.io/nsgo-flow/privacy/"/>
+    <loc>https://oneo-me.github.io/nsgo-scenra/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oneo-me.github.io/nsgo-scenra/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://oneo-me.github.io/nsgo-scenra/zh/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oneo-me.github.io/nsgo-scenra/privacy/"/>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://oneo-me.github.io/nsgo-flow/zh/privacy/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://oneo-me.github.io/nsgo-flow/privacy/"/>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://oneo-me.github.io/nsgo-flow/zh/privacy/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://oneo-me.github.io/nsgo-flow/privacy/"/>
+    <loc>https://oneo-me.github.io/nsgo-scenra/zh/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oneo-me.github.io/nsgo-scenra/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://oneo-me.github.io/nsgo-scenra/zh/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oneo-me.github.io/nsgo-scenra/privacy/"/>
     <priority>0.4</priority>
   </url>
 </urlset>

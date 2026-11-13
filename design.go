@@ -7,8 +7,8 @@ import (
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
 
-	"github.com/oneo-me/nsgo-flow/flowfile"
-	"github.com/oneo-me/nsgo-flow/locales"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
+	"github.com/oneo-me/nsgo-scenra/locales"
 )
 
 // The design canvas's zoom limits and steps, as the flow chart's.

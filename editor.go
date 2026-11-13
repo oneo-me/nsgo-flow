@@ -12,9 +12,9 @@ import (
 	"github.com/nsgo-dev/nsgo/ui"
 	uiflow "github.com/nsgo-dev/nsgo/ui/flow"
 
-	"github.com/oneo-me/nsgo-flow/agent"
-	"github.com/oneo-me/nsgo-flow/flowfile"
-	"github.com/oneo-me/nsgo-flow/locales"
+	"github.com/oneo-me/nsgo-scenra/agent"
+	"github.com/oneo-me/nsgo-scenra/flowfile"
+	"github.com/oneo-me/nsgo-scenra/locales"
 )
 
 // historyLimit is how many changes undo keeps.
@@ -170,12 +170,12 @@ func (e *editor) activate(d *document) {
 func (e *editor) newFile(then func(d *document)) {
 	tr := locales.For(e.cx)
 	d := e.newDocument(flowfile.Project{}, "")
-	dir, err := os.MkdirTemp("", "nsgo-flow")
+	dir, err := os.MkdirTemp("", "scenra")
 	if err != nil {
 		e.toasts.Show(ui.ToastContent{Type: ui.ToastError, Title: tr.SaveFailed(err.Error())})
 		return
 	}
-	name := tr.Untitled() + ".flow"
+	name := tr.Untitled() + ".scenra"
 	tmp := filepath.Join(dir, name)
 	if err := writeFile(tmp, ""); err != nil {
 		os.RemoveAll(dir)
@@ -435,7 +435,7 @@ func (e *editor) keepChangesFrom(i int, then func()) {
 
 // open asks for flow files and shows each in a tab.
 func (e *editor) open() {
-	e.cx.PickFiles(core.PickFilesOptions{Multiple: true, Types: []string{".flow", ".txt"}}, func(files []core.File, err error) {
+	e.cx.PickFiles(core.PickFilesOptions{Multiple: true, Types: []string{".scenra", ".txt"}}, func(files []core.File, err error) {
 		for _, f := range files {
 			if err != nil {
 				break
@@ -530,12 +530,12 @@ func (e *editor) saveAsThen(d *document, done func()) {
 	fail := func(err error) {
 		e.toasts.Show(ui.ToastContent{Type: ui.ToastError, Title: tr.SaveFailed(err.Error())})
 	}
-	dir, err := os.MkdirTemp("", "nsgo-flow")
+	dir, err := os.MkdirTemp("", "scenra")
 	if err != nil {
 		fail(err)
 		return
 	}
-	name := strings.TrimSuffix(core.Untracked(e.cx, d.name), ".flow") + ".flow"
+	name := strings.TrimSuffix(core.Untracked(e.cx, d.name), ".scenra") + ".scenra"
 	tmp := filepath.Join(dir, name)
 	if err := writeFile(tmp, d.doc.GetUntracked().Format()); err != nil {
 		os.RemoveAll(dir)
@@ -565,7 +565,7 @@ func (e *editor) saveAsThen(d *document, done func()) {
 // writeFile replaces the file at path with text, leaving the old one
 // whole if writing fails.
 func writeFile(path, text string) error {
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".nsgo-flow-*")
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".scenra-*")
 	if err != nil {
 		return err
 	}
