@@ -1,13 +1,10 @@
 {
-  "features": [
-    "refractivity"
-  ],
   "fill-specializations": [
     {
       "value": {
         "linear-gradient": [
-          "srgb:1.00000,1.00000,1.00000,1.00000",
-          "srgb:0.92549,0.91373,0.89412,1.00000"
+          "srgb:0.09412,0.10196,0.15686,1.00000",
+          "srgb:0.17255,0.18431,0.27059,1.00000"
         ],
         "orientation": {
           "start": {
@@ -25,8 +22,8 @@
       "appearance": "dark",
       "value": {
         "linear-gradient": [
-          "srgb:0.20000,0.20784,0.23529,1.00000",
-          "srgb:0.10980,0.11373,0.13333,1.00000"
+          "srgb:0.05490,0.05882,0.08235,1.00000",
+          "srgb:0.13333,0.14118,0.18431,1.00000"
         ],
         "orientation": {
           "start": {
@@ -45,27 +42,31 @@
     {
       "layers": [
         {
-          "image-name": "01-nodes.png",
-          "name": "01-nodes"
+          "image-name": "01-scenes.svg",
+          "name": "01-scenes"
         }
       ],
-      "name": "01-nodes",
+      "name": "01-scenes",
       "shadow": {
         "kind": "neutral",
-        "opacity": 0.4
+        "opacity": 0.45
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.35
       }
     },
     {
       "layers": [
         {
-          "image-name": "02-links.png",
-          "name": "02-links"
+          "image-name": "02-path.svg",
+          "name": "02-path"
         }
       ],
-      "name": "02-links",
+      "name": "02-path",
       "shadow": {
         "kind": "neutral",
-        "opacity": 0.3
+        "opacity": 0.35
       }
     }
   ],

@@ -1,6 +1,6 @@
 ---
-// The app icon, redrawn as a vector: a green pill, an amber diamond and an
-// indigo pill joined by dark connectors.
+// The app icon, redrawn as a vector: a cream path winding into an S through
+// a green screen, an amber node and an indigo screen on a dark tile.
 interface Props {
   size?: number;
   class?: string;
@@ -18,9 +18,8 @@ const { size = 32, class: className, tile = true } = Astro.props;
   aria-label="Scenra"
 >
   {tile && <rect x="1" y="1" width="62" height="62" rx="14" fill="var(--mark-tile)" stroke="var(--mark-line)" />}
-  <path d="M35 21h4a6 6 0 0 1 6 6v4" fill="none" stroke="var(--mark-connector)" stroke-width="5" stroke-linecap="round" />
-  <rect x="15" y="13" width="23" height="12" rx="6" fill="var(--mark-green)" />
-  <rect x="38" y="28" width="16" height="16" rx="3" transform="rotate(45 46 36)" fill="var(--mark-amber)" />
-  <path d="M40 43h-6a5 5 0 0 0-5 5v1" fill="none" stroke="var(--mark-connector)" stroke-width="5" stroke-linecap="round" />
-  <rect x="14" y="45" width="25" height="12" rx="6" fill="var(--mark-indigo)" />
+  <path d="M43.8 18.8H25.4a6.6 6.6 0 0 0 0 13.2h13.2a6.6 6.6 0 0 1 0 13.2H20.2" fill="none" stroke="var(--mark-path)" stroke-width="5" stroke-linecap="round" />
+  <rect x="42" y="12.6" width="9" height="12.6" rx="2.6" fill="var(--mark-green)" />
+  <circle cx="32" cy="32" r="5" fill="var(--mark-amber)" />
+  <rect x="13" y="38.9" width="9" height="12.6" rx="2.6" fill="var(--mark-indigo)" />
 </svg>

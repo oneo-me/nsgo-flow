@@ -32,12 +32,12 @@
   --code-key: #a3a7ff;
   --code-str: #e8bb70;
   --code-prop: #7fd1c3;
-  --mark-tile: #f5f3ee;
-  --mark-line: #e6e1d7;
-  --mark-connector: #3b3f4a;
+  --mark-tile: #23263a;
+  --mark-line: #23263a;
+  --mark-path: #f4f1ea;
   --mark-green: #45a56a;
-  --mark-amber: #e2a63d;
-  --mark-indigo: #575ad8;
+  --mark-amber: #e8a93a;
+  --mark-indigo: #5b5ee0;
 
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', 'PingFang SC',
@@ -70,9 +70,9 @@ html[data-theme='dark'] {
   --shadow: 0 14px 36px -16px rgb(0 0 0 / 60%);
   --shadow-lg: 0 44px 90px -40px rgb(0 0 0 / 80%);
   --header: rgb(11 13 18 / 92%);
-  --mark-tile: #171a20;
-  --mark-line: #2a2f39;
-  --mark-connector: #8d94a3;
+  --mark-tile: #1a1c28;
+  --mark-line: #2e3244;
+  --mark-path: #ece8df;
   --mark-green: #56bd7e;
   --mark-amber: #eab54e;
   --mark-indigo: #7b7ef0;
